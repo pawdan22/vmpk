@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>vmpk - panel</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <style>
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 50px; text-transform: lowercase; }
+        .btn { background: #5865F2; color: white; border: none; padding: 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>vmpk drobin - panel</h1>
+    
+    <div id="u-info" style="display:none">
+        <h2 id="u-name">siema!</h2>
+        <button class="btn" onclick="add()" style="background:#e74c3c">dodaj km</button>
+        <p onclick="logout()" style="color:#444; cursor:pointer; font-size:10px; margin-top:20px;">wyloguj</p>
+    </div>
+
+    <div id="l-info">
+        <button class="btn" onclick="login()">zaloguj przez discord</button>
+    </div>
+
+    <script>
+        const sb = window.supabase.createClient(
+            'https://rgkpsalluqhncepieuht.supabase.co', 
+            'sb_publishable_UVLQNk4RSTuFZsjTJilDeA_M62'
+        );
+
+        async function login() {
+            await sb.auth.signInWithOAuth({ 
+                provider: 'discord',
+                options: { 
+                    // TUTAJ WPISZ SWÓJ NOWY ADRES Z TIINY.HOST
+                    redirectTo: 'https://vmpkdrobin.tiiny.site' 
+                }
+            });
+        }
+
+        async function logout() {
+            await sb.auth.signOut();
+            location.reload();
+        }
+
+        window.onload = async () => {
+            const { data: { session } } = await sb.auth.getSession();
+            if (session) {
+                document.getElementById('l-info').style.display = 'none';
+                document.getElementById('u-info').style.display = 'block';
+                document.getElementById('u-name').innerText = "siema, " + session.user.user_metadata.full_name;
+                // usuwa tokeny z paska adresu
+                window.history.replaceState(null, null, window.location.pathname);
+            }
+        };
+
+        async function add() {
+            const k = prompt("ile km przejechane?");
+            if(k && !isNaN(k)) {
+                const { data: { user } } = await sb.auth.getUser();
+                const { error } = await sb.from('stats').insert([{ 
+                    user_id: user.id, 
+                    kilometers: parseFloat(k),
+                    username: user.user_metadata.full_name 
+                }]);
+                
+                if (error) alert("błąd zapisu: " + error.message);
+                else alert("dodano " + k + " km!");
+            }
+        }
+    </script>
+</body>
+</html>
