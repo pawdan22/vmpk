@@ -20,57 +20,55 @@
 
         body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text); font-family: 'Segoe UI', Roboto, sans-serif; overflow: hidden; }
 
-        /* MODALE */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center;
         }
         .v-modal {
             background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid var(--border);
-            width: 350px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            width: 400px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.8);
         }
-        .v-modal h3 { color: var(--yellow); margin-top: 0; }
-        .v-modal p { color: var(--text-dim); font-size: 14px; margin-bottom: 25px; }
         
-        .modal-btns { display: flex; gap: 10px; justify-content: center; }
-        .btn { padding: 10px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        .btn-yes { background: var(--accent); color: white; }
-        .btn-no { background: #333; color: white; }
-        .btn:hover { opacity: 0.8; transform: scale(1.05); }
-
-        /* KALENDARZ */
         .calendar-container { background: var(--card-bg); width: 90%; max-width: 900px; padding: 25px; border-radius: 15px; position: relative; }
         .fc { color: #fff; background: #161616; padding: 10px; border-radius: 8px; border: 1px solid var(--border); max-height: 70vh; }
-        .fc-toolbar-title { color: var(--yellow) !important; font-size: 1.1em !important; text-transform: uppercase; }
-        .fc-button-primary { background-color: var(--accent) !important; border: none !important; }
-        .fc-event { background-color: var(--accent) !important; border: none !important; font-size: 11px; cursor: help; }
+        .fc-event { background-color: var(--accent) !important; border: none !important; cursor: help; }
 
-        /* UI PANELU */
         #login-page { display: flex; align-items: center; justify-content: center; height: 100vh; background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.85)), url('https://i.imgur.com/jLWmK8I.jpeg'); background-size: cover; background-position: center; }
         .login-box { background: var(--card-bg); padding: 40px; border-radius: 15px; border: 1px solid var(--border); width: 320px; text-align: center; }
-        
-        /* Styl dla LOGO w logowaniu */
-        .login-logo { width: 180px; margin-bottom: 20px; filter: drop-shadow(0 0 10px rgba(163, 29, 35, 0.3)); }
+        .login-logo { width: 180px; margin-bottom: 20px; }
 
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label { display: block; margin-bottom: 8px; color: var(--text-dim); font-size: 11px; font-weight: bold; text-transform: uppercase; }
-        .input-group input { width: 100%; padding: 12px; background: #080808; border: 1px solid var(--border); border-radius: 6px; color: #fff; outline: none; box-sizing: border-box; }
-        .login-btn { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .input-group input, .input-group select { width: 100%; padding: 12px; background: #080808; border: 1px solid var(--border); border-radius: 6px; color: #fff; outline: none; box-sizing: border-box; }
+        
+        .btn { padding: 12px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; }
+        .btn-accent { background: var(--accent); }
+        .btn-yellow { background: var(--yellow); color: #000; }
+        .login-btn { width: 100%; background: var(--accent); }
 
         #dashboard { display: none; height: 100vh; grid-template-columns: 260px 1fr; }
         aside { background: var(--card-bg); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
-        
-        /* Styl dla LOGO w sidebarze */
         .nav-logo { width: 140px; margin-bottom: 40px; align-self: center; }
 
-        nav ul { list-style: none; padding: 0; }
+        nav ul { list-style: none; padding: 0; flex-grow: 1; }
         nav li { padding: 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; color: var(--text-dim); display: flex; align-items: center; gap: 15px; }
         nav li.active { border-left: 4px solid var(--accent); color: #fff; background: #1a1a1a; }
+        
         main { padding: 40px; overflow-y: auto; background: #0e0e0e; }
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
         .stat-card { background: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid var(--border); }
         .stat-card p { margin: 12px 0 0; font-size: 30px; font-weight: bold; color: var(--yellow); }
-        .btn-add { background: var(--accent); color: white; border: none; padding: 12px 25px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; color: var(--text-dim); font-size: 11px; padding: 10px; border-bottom: 1px solid var(--border); }
+        td { padding: 15px 10px; border-bottom: 1px solid var(--border); }
+        
+        .admin-only { display: none; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .badge-pending { background: #555; }
     </style>
 </head>
 <body>
@@ -84,16 +82,16 @@
 
     <div id="pref-modal" class="modal-overlay">
         <div class="v-modal">
-            <h3 style="color:var(--yellow)">Potwierdź służbę</h3>
-            <p id="date-label" style="color:#fff; font-weight: bold; margin-bottom: 5px;"></p>
-            <p id="slots-info" style="color: var(--accent); font-weight: bold; font-size: 12px; margin-bottom: 15px;"></p>
-            <p>Wpisz jaki autobus preferujesz na ten dzień.</p>
+            <h3 style="color:var(--yellow)">Wnioskuj o służbę</h3>
+            <p id="date-label" style="font-weight: bold;"></p>
+            <p id="slots-info" style="color: var(--accent); font-size: 12px;"></p>
             <div class="input-group">
-                <input type="text" id="pref-input" placeholder="np. Solaris Urbino 12" style="text-align: center;">
+                <label>Preferowany autobus</label>
+                <input type="text" id="pref-input" placeholder="np. Solaris Urbino 12">
             </div>
-            <div class="modal-btns">
-                <button id="submit-btn" class="btn btn-yes" onclick="submitService()">Zatwierdź</button>
-                <button class="btn btn-no" onclick="closeAll()">Cofnij</button>
+            <div style="display:flex; gap:10px; justify-content: center;">
+                <button id="submit-btn" class="btn btn-accent" onclick="submitService()">Wyślij wniosek</button>
+                <button class="btn" style="background:#333" onclick="closeAll()">Cofnij</button>
             </div>
         </div>
     </div>
@@ -109,7 +107,7 @@
                 <label>hasło</label>
                 <input type="password" id="password" placeholder="••••">
             </div>
-            <button class="login-btn" onclick="handleLogin()">zaloguj</button>
+            <button class="login-btn btn" onclick="handleLogin()">zaloguj</button>
         </div>
     </section>
 
@@ -118,7 +116,8 @@
             <img src="logo.png" alt="VMPK Logo" class="nav-logo">
             <nav>
                 <ul>
-                    <li class="active"><i class="fa-solid fa-gauge-high"></i> Strona Główna</li>
+                    <li onclick="switchView('home')" id="nav-home" class="active"><i class="fa-solid fa-gauge-high"></i> Strona Główna</li>
+                    <li onclick="switchView('admin')" id="nav-admin" class="admin-only"><i class="fa-solid fa-user-shield"></i> Panel Zarządzania</li>
                     <li onclick="location.reload()" style="color:var(--yellow)"><i class="fa-solid fa-right-from-bracket"></i> Wyloguj</li>
                 </ul>
             </nav>
@@ -126,75 +125,119 @@
         </aside>
 
         <main>
-            <h1>Panel Kierowcy vMPK Drobin</h1>
-            <div class="stats-grid">
-                <div class="stat-card"><h3>Twoje Kilometry</h3><p id="user-km">0.0 km</p></div>
-                <div class="stat-card"><h3>Suma Firmy</h3><p id="total-km">0.0 km</p></div>
+            <div id="view-home" class="view-section active">
+                <h1>Panel Kierowcy vMPK Drobin</h1>
+                <div class="stats-grid">
+                    <div class="stat-card"><h3>Twoje Kilometry</h3><p id="user-km">0.0 km</p></div>
+                    <div class="stat-card"><h3>Suma Firmy</h3><p id="total-km">0.0 km</p></div>
+                </div>
+                <button class="btn btn-accent" onclick="openCalendar()"><i class="fa-solid fa-calendar-plus"></i> Wnioskuj o służbę</button>
+                
+                <h2 style="margin-top:40px; font-size:16px; color:var(--text-dim);">Ranking Kierowców</h2>
+                <table>
+                    <thead><tr><th>KIEROWCA</th><th>KILOMETRY</th></tr></thead>
+                    <tbody id="ranking-body"></tbody>
+                </table>
             </div>
-            <button class="btn-add" onclick="openCalendar()"><i class="fa-solid fa-calendar-plus"></i> Wnioskuj o służbę</button>
-            <h2 style="margin-top:40px; font-size:16px; color:var(--text-dim);">Ranking Kierowców</h2>
-            <table class="ranking-table" style="width:100%; border-collapse: collapse; margin-top:20px;">
-                <thead><tr style="text-align:left; color:var(--text-dim); font-size:11px;"><th>KIEROWCA</th><th>KILOMETRY</th></tr></thead>
-                <tbody id="ranking-body"></tbody>
-            </table>
+
+            <div id="view-admin" class="view-section">
+                <h1>Panel Zarządzania (Admin)</h1>
+                
+                <div style="background: #161616; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px;">
+                    <h3><i class="fa-solid fa-plus-circle"></i> Dodaj służbę ręcznie</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+                        <div class="input-group" style="margin:0">
+                            <label>Kierowca</label>
+                            <select id="adm-user-select"></select>
+                        </div>
+                        <div class="input-group" style="margin:0">
+                            <label>Data</label>
+                            <input type="date" id="adm-date">
+                        </div>
+                        <div class="input-group" style="margin:0">
+                            <label>Autobus</label>
+                            <input type="text" id="adm-bus" placeholder="np. MAN Lion's City">
+                        </div>
+                        <div class="input-group" style="margin:0">
+                            <label>Kilometry (opcjonalnie)</label>
+                            <input type="number" id="adm-km" placeholder="0.0">
+                        </div>
+                        <button class="btn btn-yellow" onclick="adminAddService()">Dodaj</button>
+                    </div>
+                </div>
+
+                <h3><i class="fa-solid fa-list-check"></i> Aktywne wnioski i służby</h3>
+                <table>
+                    <thead>
+                        <tr><th>DATA</th><th>KIEROWCA</th><th>POJAZD</th><th>STATUS</th><th>AKCJA</th></tr>
+                    </thead>
+                    <tbody id="admin-requests-body"></tbody>
+                </table>
+            </div>
         </main>
     </div>
 
     <script>
-        // --- KONFIGURACJA SUPABASE ---
-        // WKLEJ TUTAJ SWÓJ KLUCZ ANON KTÓRY SKOPIOWAŁEŚ Z PANELU
         const sb = window.supabase.createClient(
             'https://rgkpsalluqhncepieuht.supabase.co', 
             'sb_publishable_UVLQNk4RSTuFZsjTJilDeA_M62vfl5Q' 
         );
 
-        // --- BAZA UŻYTKOWNIKÓW (TU MOŻESZ DODAĆ 15 I WIĘCEJ) ---
         const USERS = [
-            { user: "pawdan", pass: "admin123" },
-            { user: "oloszz", pass: "drobin2026" },
-            { user: "kierowca2", pass: "vmpk1" },
-            { user: "1234", pass: "1234" },
-            { user: "szeryf", pass: "pass789" },
-            // Tutaj dopisuj kolejnych mordo...
+            { user: "pawdan", pass: "admin123", isAdmin: true },
+            { user: "oloszz", pass: "drobin2026", isAdmin: false },
+            { user: "kierowca2", pass: "vmpk1", isAdmin: false },
+            { user: "1234", pass: "1234", isAdmin: false },
+            { user: "szeryf", pass: "pass789", isAdmin: false }
         ];
 
         const DISCORD_WEBHOOK = "TU_WKLEJ_SWOJ_WEBHOOK"; 
 
-        let currentUser = "";
+        let currentUser = null;
         let calendar;
         let selectedDate = "";
 
         function handleLogin() {
             const u = document.getElementById('username').value;
             const p = document.getElementById('password').value;
-            
             const foundUser = USERS.find(item => item.user === u && item.pass === p);
 
             if(foundUser) {
-                currentUser = foundUser.user;
+                currentUser = foundUser;
                 document.getElementById('login-page').style.display = 'none';
                 document.getElementById('dashboard').style.display = 'grid';
-                document.getElementById('display-user').innerText = currentUser;
+                document.getElementById('display-user').innerText = currentUser.user;
+
+                if(currentUser.isAdmin) {
+                    document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
+                    fillAdminSelect();
+                }
+
                 initCalendar();
                 refreshData();
+                if(currentUser.isAdmin) refreshAdminPanel();
             } else {
                 alert("Błędny login lub hasło, mordo!");
             }
         }
 
-        async function initCalendar() {
-            const { data: reservations, error } = await sb.from('sluzby').select('*');
-            
-            if(error) {
-                console.error("Błąd kalendarza:", error.message);
-            }
+        function switchView(view) {
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('nav li').forEach(l => l.classList.remove('active'));
+            document.getElementById('view-' + view).classList.add('active');
+            document.getElementById('nav-' + view).classList.add('active');
+            if(view === 'admin') refreshAdminPanel();
+        }
 
+        async function initCalendar() {
+            const { data: reservations } = await sb.from('sluzby').select('*');
             const events = reservations ? reservations.map(r => ({
                 title: `${r.kierowca} (${r.pojazd})`,
                 start: r.data
             })) : [];
 
-            calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+            const calendarEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: 'dayGridMonth',
                 locale: 'pl',
                 firstDay: 1,
@@ -202,24 +245,9 @@
                 dateClick: async function(info) {
                     selectedDate = info.dateStr;
                     document.getElementById('date-label').innerText = "Wybrany dzień: " + selectedDate;
-                    
                     const { data: countData } = await sb.from('sluzby').select('id').eq('data', selectedDate);
                     const currentCount = countData ? countData.length : 0;
-                    const slotsInfo = document.getElementById('slots-info');
-                    const btn = document.getElementById('submit-btn');
-
-                    slotsInfo.innerText = `Zajęte: ${currentCount} / 5 miejsc`;
-
-                    if(currentCount >= 5) {
-                        btn.disabled = true;
-                        btn.style.opacity = "0.4";
-                        btn.innerText = "Brak miejsc";
-                    } else {
-                        btn.disabled = false;
-                        btn.style.opacity = "1";
-                        btn.innerText = "Zatwierdź";
-                    }
-
+                    document.getElementById('slots-info').innerText = `Zajęte: ${currentCount} / 5 miejsc`;
                     document.getElementById('pref-modal').style.display = 'flex';
                 }
             });
@@ -235,40 +263,67 @@
 
         async function submitService() {
             const pref = document.getElementById('pref-input').value;
-            
-            const { data: checkData } = await sb.from('sluzby').select('id').eq('data', selectedDate);
-            if(checkData && checkData.length >= 5) {
-                alert("Mordo, limit 5 osób na dzień wyczerpany!");
-                return;
-            }
-
             const { error } = await sb.from('sluzby').insert([{ 
-                kierowca: currentUser, 
+                kierowca: currentUser.user, 
                 data: selectedDate,
                 pojazd: pref || "Brak"
             }]);
             
             if(!error) {
-                await fetch(DISCORD_WEBHOOK, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        embeds: [{
-                            title: "🆕 Nowy wniosek o służbę!",
-                            color: 16776960,
-                            fields: [
-                                { name: "👤 Kierowca", value: currentUser, inline: true },
-                                { name: "📅 Data", value: selectedDate, inline: true },
-                                { name: "🚌 Pojazd", value: pref || "Brak preferencji" }
-                            ]
-                        }]
-                    })
-                });
-
                 alert("Wniosek o służbę został wysłany!");
                 location.reload(); 
             } else {
-                alert("Błąd bazy: " + error.message + ". Sprawdź czy ustawiłeś RLS!");
+                alert("Błąd: " + error.message);
+            }
+        }
+
+        function fillAdminSelect() {
+            const select = document.getElementById('adm-user-select');
+            select.innerHTML = USERS.map(u => `<option value="${u.user}">${u.user}</option>`).join('');
+        }
+
+        async function adminAddService() {
+            const user = document.getElementById('adm-user-select').value;
+            const date = document.getElementById('adm-date').value;
+            const bus = document.getElementById('adm-bus').value;
+            const km = parseFloat(document.getElementById('adm-km').value) || 0;
+
+            if(!date) return alert("Wybierz datę!");
+
+            // Dodaj do sluzby
+            await sb.from('sluzby').insert([{ kierowca: user, data: date, pojazd: bus }]);
+            // Dodaj kilometry jeśli wpisano
+            if(km > 0) {
+                await sb.from('stats').insert([{ username: user, kilometers: km }]);
+            }
+
+            alert("Służba dodana pomyślnie!");
+            refreshAdminPanel();
+            refreshData();
+        }
+
+        async function deleteService(id) {
+            if(confirm("Na pewno usunąć tę służbę/wniosek?")) {
+                await sb.from('sluzby').delete().eq('id', id);
+                refreshAdminPanel();
+            }
+        }
+
+        async function refreshAdminPanel() {
+            const { data } = await sb.from('sluzby').select('*').order('data', { ascending: false });
+            const tbody = document.getElementById('admin-requests-body');
+            if(data) {
+                tbody.innerHTML = data.map(r => `
+                    <tr>
+                        <td>${r.data}</td>
+                        <td style="color:var(--yellow)">${r.kierowca}</td>
+                        <td>${r.pojazd}</td>
+                        <td><span class="badge badge-pending">Oczekuje</span></td>
+                        <td>
+                            <button class="btn btn-accent" style="padding: 5px 10px; font-size:10px" onclick="deleteService(${r.id})">USUŃ</button>
+                        </td>
+                    </tr>
+                `).join('');
             }
         }
 
@@ -279,7 +334,7 @@
                 const r = {};
                 data.forEach(row => {
                     tSum += row.kilometers;
-                    if(row.username === currentUser) uSum += row.kilometers;
+                    if(row.username === currentUser.user) uSum += row.kilometers;
                     r[row.username] = (r[row.username] || 0) + row.kilometers;
                 });
                 document.getElementById('user-km').innerText = uSum.toFixed(1) + " km";
