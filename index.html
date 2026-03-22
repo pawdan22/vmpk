@@ -13,6 +13,7 @@
             --card-bg: #111111;
             --accent: #a31d23; 
             --yellow: #f4c430; 
+            --green: #2ecc71;
             --text: #ffffff;
             --text-dim: #777;
             --border: #222222;
@@ -31,7 +32,7 @@
         
         .calendar-container { background: var(--card-bg); width: 90%; max-width: 900px; padding: 25px; border-radius: 15px; position: relative; }
         .fc { color: #fff; background: #161616; padding: 10px; border-radius: 8px; border: 1px solid var(--border); max-height: 70vh; }
-        .fc-event { background-color: var(--accent) !important; border: none !important; cursor: help; }
+        .fc-event { border: none !important; cursor: help; padding: 2px; }
 
         #login-page { display: flex; align-items: center; justify-content: center; height: 100vh; background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.85)), url('https://i.imgur.com/jLWmK8I.jpeg'); background-size: cover; background-position: center; }
         .login-box { background: var(--card-bg); padding: 40px; border-radius: 15px; border: 1px solid var(--border); width: 320px; text-align: center; }
@@ -41,10 +42,11 @@
         .input-group label { display: block; margin-bottom: 8px; color: var(--text-dim); font-size: 11px; font-weight: bold; text-transform: uppercase; }
         .input-group input, .input-group select { width: 100%; padding: 12px; background: #080808; border: 1px solid var(--border); border-radius: 6px; color: #fff; outline: none; box-sizing: border-box; }
         
-        .btn { padding: 12px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; }
+        .btn { padding: 12px 20px; border-radius: 6px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; display: inline-flex; align-items: center; gap: 8px; }
         .btn-accent { background: var(--accent); }
         .btn-yellow { background: var(--yellow); color: #000; }
-        .login-btn { width: 100%; background: var(--accent); }
+        .btn-green { background: var(--green); color: #fff; }
+        .login-btn { width: 100%; background: var(--accent); justify-content: center; }
 
         #dashboard { display: none; height: 100vh; grid-template-columns: 260px 1fr; }
         aside { background: var(--card-bg); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
@@ -62,13 +64,16 @@
         .stat-card { background: var(--card-bg); padding: 25px; border-radius: 12px; border: 1px solid var(--border); }
         .stat-card p { margin: 12px 0 0; font-size: 30px; font-weight: bold; color: var(--yellow); }
 
+        .today-duty-card { background: linear-gradient(45deg, #1a1a1a, #0d0d0d); border: 1px solid var(--yellow); padding: 20px; border-radius: 12px; margin-bottom: 30px; display: none; }
+
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th { text-align: left; color: var(--text-dim); font-size: 11px; padding: 10px; border-bottom: 1px solid var(--border); }
-        td { padding: 15px 10px; border-bottom: 1px solid var(--border); }
+        td { padding: 15px 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
         
         .admin-only { display: none; }
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
         .badge-pending { background: #555; }
+        .badge-active { background: var(--green); }
     </style>
 </head>
 <body>
@@ -127,6 +132,13 @@
         <main>
             <div id="view-home" class="view-section active">
                 <h1>Panel Kierowcy vMPK Drobin</h1>
+                
+                <div id="today-duty" class="today-duty-card">
+                    <h3 style="margin:0; color:var(--yellow); font-size:14px; text-transform:uppercase;">📅 Twoja służba na dziś:</h3>
+                    <p id="duty-details" style="margin:10px 0 0; font-size:18px; font-weight:bold;"></p>
+                    <span class="badge badge-active" style="margin-top:10px; display:inline-block;">Zatwierdzona</span>
+                </div>
+
                 <div class="stats-grid">
                     <div class="stat-card"><h3>Twoje Kilometry</h3><p id="user-km">0.0 km</p></div>
                     <div class="stat-card"><h3>Suma Firmy</h3><p id="total-km">0.0 km</p></div>
@@ -166,7 +178,7 @@
                     </div>
                 </div>
 
-                <h3><i class="fa-solid fa-list-check"></i> Aktywne wnioski i służby</h3>
+                <h3><i class="fa-solid fa-list-check"></i> Wnioski i zarządzanie służbami</h3>
                 <table>
                     <thead>
                         <tr><th>DATA</th><th>KIEROWCA</th><th>POJAZD</th><th>STATUS</th><th>AKCJA</th></tr>
@@ -191,8 +203,6 @@
             { user: "szeryf", pass: "pass789", isAdmin: false }
         ];
 
-        const DISCORD_WEBHOOK = "TU_WKLEJ_SWOJ_WEBHOOK"; 
-
         let currentUser = null;
         let calendar;
         let selectedDate = "";
@@ -215,6 +225,7 @@
 
                 initCalendar();
                 refreshData();
+                checkTodayDuty();
                 if(currentUser.isAdmin) refreshAdminPanel();
             } else {
                 alert("Błędny login lub hasło, mordo!");
@@ -227,17 +238,18 @@
             document.getElementById('view-' + view).classList.add('active');
             document.getElementById('nav-' + view).classList.add('active');
             if(view === 'admin') refreshAdminPanel();
+            if(view === 'home') checkTodayDuty();
         }
 
         async function initCalendar() {
             const { data: reservations } = await sb.from('sluzby').select('*');
             const events = reservations ? reservations.map(r => ({
                 title: `${r.kierowca} (${r.pojazd})`,
-                start: r.data
+                start: r.data,
+                color: r.status === 'zatwierdzona' ? '#2ecc71' : '#a31d23'
             })) : [];
 
-            const calendarEl = document.getElementById('calendar');
-            calendar = new FullCalendar.Calendar(calendarEl, {
+            calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
                 initialView: 'dayGridMonth',
                 locale: 'pl',
                 firstDay: 1,
@@ -266,20 +278,34 @@
             const { error } = await sb.from('sluzby').insert([{ 
                 kierowca: currentUser.user, 
                 data: selectedDate,
-                pojazd: pref || "Brak"
+                pojazd: pref || "Brak",
+                status: 'oczekujący'
             }]);
             
-            if(!error) {
-                alert("Wniosek o służbę został wysłany!");
-                location.reload(); 
+            if(!error) { alert("Wniosek wysłany!"); location.reload(); }
+        }
+
+        async function checkTodayDuty() {
+            const dzis = new Date().toISOString().split('T')[0];
+            const { data } = await sb.from('sluzby')
+                .select('*')
+                .eq('kierowca', currentUser.user)
+                .eq('data', dzis)
+                .eq('status', 'zatwierdzona')
+                .single();
+
+            const card = document.getElementById('today-duty');
+            if(data) {
+                card.style.display = 'block';
+                document.getElementById('duty-details').innerText = `Autobus: ${data.pojazd}`;
             } else {
-                alert("Błąd: " + error.message);
+                card.style.display = 'none';
             }
         }
 
+        // ADMIN FUNCTIONS
         function fillAdminSelect() {
-            const select = document.getElementById('adm-user-select');
-            select.innerHTML = USERS.map(u => `<option value="${u.user}">${u.user}</option>`).join('');
+            document.getElementById('adm-user-select').innerHTML = USERS.map(u => `<option value="${u.user}">${u.user}</option>`).join('');
         }
 
         async function adminAddService() {
@@ -287,26 +313,21 @@
             const date = document.getElementById('adm-date').value;
             const bus = document.getElementById('adm-bus').value;
             const km = parseFloat(document.getElementById('adm-km').value) || 0;
-
             if(!date) return alert("Wybierz datę!");
 
-            // Dodaj do sluzby
-            await sb.from('sluzby').insert([{ kierowca: user, data: date, pojazd: bus }]);
-            // Dodaj kilometry jeśli wpisano
-            if(km > 0) {
-                await sb.from('stats').insert([{ username: user, kilometers: km }]);
-            }
+            await sb.from('sluzby').insert([{ kierowca: user, data: date, pojazd: bus, status: 'zatwierdzona' }]);
+            if(km > 0) await sb.from('stats').insert([{ username: user, kilometers: km }]);
 
-            alert("Służba dodana pomyślnie!");
+            alert("Dodano!"); refreshAdminPanel(); refreshData();
+        }
+
+        async function approveService(id) {
+            await sb.from('sluzby').update({ status: 'zatwierdzona' }).eq('id', id);
             refreshAdminPanel();
-            refreshData();
         }
 
         async function deleteService(id) {
-            if(confirm("Na pewno usunąć tę służbę/wniosek?")) {
-                await sb.from('sluzby').delete().eq('id', id);
-                refreshAdminPanel();
-            }
+            if(confirm("Usunąć?")) { await sb.from('sluzby').delete().eq('id', id); refreshAdminPanel(); }
         }
 
         async function refreshAdminPanel() {
@@ -318,9 +339,10 @@
                         <td>${r.data}</td>
                         <td style="color:var(--yellow)">${r.kierowca}</td>
                         <td>${r.pojazd}</td>
-                        <td><span class="badge badge-pending">Oczekuje</span></td>
-                        <td>
-                            <button class="btn btn-accent" style="padding: 5px 10px; font-size:10px" onclick="deleteService(${r.id})">USUŃ</button>
+                        <td><span class="badge ${r.status === 'zatwierdzona' ? 'badge-active' : 'badge-pending'}">${r.status}</span></td>
+                        <td style="display:flex; gap:5px;">
+                            ${r.status === 'oczekujący' ? `<button class="btn btn-green" style="padding:5px 10px; font-size:10px" onclick="approveService(${r.id})">ZATWIERDŹ</button>` : ''}
+                            <button class="btn btn-accent" style="padding:5px 10px; font-size:10px" onclick="deleteService(${r.id})">USUŃ</button>
                         </td>
                     </tr>
                 `).join('');
@@ -330,8 +352,7 @@
         async function refreshData() {
             const { data } = await sb.from('stats').select('*');
             if(data) {
-                let uSum = 0, tSum = 0;
-                const r = {};
+                let uSum = 0, tSum = 0; const r = {};
                 data.forEach(row => {
                     tSum += row.kilometers;
                     if(row.username === currentUser.user) uSum += row.kilometers;
