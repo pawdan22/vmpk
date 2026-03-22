@@ -7,8 +7,9 @@
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 50px; text-transform: lowercase; }
         .btn { background: #5865F2; color: white; border: none; padding: 20px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; max-width: 300px; }
-        .card { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333; display: inline-block; }
+        .card { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333; display: inline-block; min-width: 300px; }
         #ranking { margin-top: 30px; text-align: left; font-size: 14px; border-top: 1px solid #333; padding-top: 20px; }
+        .user-row { display: flex; justify-content: space-between; margin-bottom: 5px; background: #222; padding: 10px; border-radius: 5px; }
     </style>
 </head>
 <body>
@@ -21,7 +22,7 @@
             
             <div id="ranking">
                 <strong>ranking kierowców:</strong>
-                <div id="lista-rankingowa">wczytuję...</div>
+                <div id="lista-rankingowa" style="margin-top:10px;">wczytuję...</div>
             </div>
 
             <p onclick="logout()" style="color:#444; cursor:pointer; font-size:10px; margin-top:20px;">wyloguj</p>
@@ -38,11 +39,13 @@
             'sb_publishable_UVLQNk4RSTuFZsjTJilDeA_M62'
         );
 
+        // WPISANE NA SZTYWNO, ŻEBY UNIKNĄĆ BŁĘDU 404
+        const MY_URL = 'https://pawdan22.github.io/vmpk/';
+
         async function login() {
-            // TERAZ AUTOMATYCZNIE WRÓCI NA TWÓJ ADRES GITHUB
             await sb.auth.signInWithOAuth({ 
                 provider: 'discord',
-                options: { redirectTo: window.location.origin + window.location.pathname }
+                options: { redirectTo: MY_URL }
             });
         }
 
@@ -56,11 +59,12 @@
             if (!error && data) {
                 const podsumowanie = {};
                 data.forEach(wpis => {
-                    podsumowanie[wpis.username] = (podsumowanie[wpis.username] || 0) + wpis.kilometers;
+                    const name = wpis.username || 'anonim';
+                    podsumowanie[name] = (podsumowanie[name] || 0) + wpis.kilometers;
                 });
                 const html = Object.entries(podsumowanie)
                     .sort((a, b) => b[1] - a[1])
-                    .map(([user, km]) => `<div>${user}: <b>${km.toFixed(1)} km</b></div>`)
+                    .map(([user, km]) => `<div class="user-row"><span>${user}</span> <b>${km.toFixed(1)} km</b></div>`)
                     .join('');
                 document.getElementById('lista-rankingowa').innerHTML = html || "brak danych";
             }
@@ -71,9 +75,9 @@
             if (session) {
                 document.getElementById('l-info').style.display = 'none';
                 document.getElementById('u-info').style.display = 'block';
-                document.getElementById('u-name').innerText = "siema, " + session.user.user_metadata.full_name;
+                document.getElementById('u-name').innerText = "siema, " + (session.user.user_metadata.full_name || 'kierowca');
                 pobierzRanking();
-                // czyści token z adresu, żeby nie wywalało 404 przy odświeżaniu
+                // czyści pasek adresu z tokenów
                 window.history.replaceState(null, null, window.location.pathname);
             }
         };
@@ -85,7 +89,7 @@
                 const { error } = await sb.from('stats').insert([{ 
                     user_id: user.id, 
                     kilometers: parseFloat(k),
-                    username: user.user_metadata.full_name 
+                    username: user.user_metadata.full_name || user.email
                 }]);
                 
                 if (error) alert("błąd zapisu: " + error.message);
