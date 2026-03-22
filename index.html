@@ -6,20 +6,30 @@
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
         body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 50px; text-transform: lowercase; }
-        .btn { background: #5865F2; color: white; border: none; padding: 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn { background: #5865F2; color: white; border: none; padding: 20px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; max-width: 300px; }
+        .card { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333; display: inline-block; }
+        #ranking { margin-top: 30px; text-align: left; font-size: 14px; border-top: 1px solid #333; padding-top: 20px; }
     </style>
 </head>
 <body>
-    <h1>vmpk drobin - panel</h1>
-    
-    <div id="u-info" style="display:none">
-        <h2 id="u-name">siema!</h2>
-        <button class="btn" onclick="add()" style="background:#e74c3c">dodaj km</button>
-        <p onclick="logout()" style="color:#444; cursor:pointer; font-size:10px; margin-top:20px;">wyloguj</p>
-    </div>
+    <div class="card">
+        <h1>vmpk drobin - panel</h1>
+        
+        <div id="u-info" style="display:none">
+            <h2 id="u-name">siema!</h2>
+            <button class="btn" onclick="add()" style="background:#e74c3c">dodaj km</button>
+            
+            <div id="ranking">
+                <strong>ranking kierowców:</strong>
+                <div id="lista-rankingowa">wczytuję...</div>
+            </div>
 
-    <div id="l-info">
-        <button class="btn" onclick="login()">zaloguj przez discord</button>
+            <p onclick="logout()" style="color:#444; cursor:pointer; font-size:10px; margin-top:20px;">wyloguj</p>
+        </div>
+
+        <div id="l-info">
+            <button class="btn" onclick="login()">zaloguj przez discord</button>
+        </div>
     </div>
 
     <script>
@@ -29,12 +39,10 @@
         );
 
         async function login() {
+            // TERAZ AUTOMATYCZNIE WRÓCI NA TWÓJ ADRES GITHUB
             await sb.auth.signInWithOAuth({ 
                 provider: 'discord',
-                options: { 
-                    // TUTAJ WPISZ SWÓJ NOWY ADRES Z TIINY.HOST
-                    redirectTo: 'https://vmpkdrobin.tiiny.site' 
-                }
+                options: { redirectTo: window.location.origin + window.location.pathname }
             });
         }
 
@@ -43,13 +51,29 @@
             location.reload();
         }
 
+        async function pobierzRanking() {
+            const { data, error } = await sb.from('stats').select('username, kilometers');
+            if (!error && data) {
+                const podsumowanie = {};
+                data.forEach(wpis => {
+                    podsumowanie[wpis.username] = (podsumowanie[wpis.username] || 0) + wpis.kilometers;
+                });
+                const html = Object.entries(podsumowanie)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([user, km]) => `<div>${user}: <b>${km.toFixed(1)} km</b></div>`)
+                    .join('');
+                document.getElementById('lista-rankingowa').innerHTML = html || "brak danych";
+            }
+        }
+
         window.onload = async () => {
             const { data: { session } } = await sb.auth.getSession();
             if (session) {
                 document.getElementById('l-info').style.display = 'none';
                 document.getElementById('u-info').style.display = 'block';
                 document.getElementById('u-name').innerText = "siema, " + session.user.user_metadata.full_name;
-                // usuwa tokeny z paska adresu
+                pobierzRanking();
+                // czyści token z adresu, żeby nie wywalało 404 przy odświeżaniu
                 window.history.replaceState(null, null, window.location.pathname);
             }
         };
@@ -65,7 +89,10 @@
                 }]);
                 
                 if (error) alert("błąd zapisu: " + error.message);
-                else alert("dodano " + k + " km!");
+                else {
+                    alert("dodano " + k + " km!");
+                    pobierzRanking();
+                }
             }
         }
     </script>
