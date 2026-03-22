@@ -66,6 +66,11 @@
 
         .today-duty-card { background: linear-gradient(135deg, #1a1a1a 0%, #050505 100%); border: 1px solid var(--yellow); padding: 25px; border-radius: 15px; margin-bottom: 30px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
+        /* NOWY STYL DLA TIMERA */
+        .timer-box { margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; border-left: 3px solid var(--yellow); display: flex; flex-direction: column; gap: 4px; }
+        .timer-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+        .timer-value { font-size: 18px; font-weight: bold; color: var(--yellow); font-family: 'Courier New', Courier, monospace; }
+
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th { text-align: left; color: var(--text-dim); font-size: 11px; padding: 10px; border-bottom: 1px solid var(--border); }
         td { padding: 15px 10px; border-bottom: 1px solid var(--border); font-size: 14px; }
@@ -148,6 +153,11 @@
                             <p id="duty-bus" style="margin:0; font-size:18px; font-weight:bold;"></p>
                             <span class="badge badge-active" style="margin-top:5px; display:inline-block;">Zatwierdzona</span>
                         </div>
+                    </div>
+
+                    <div class="timer-box">
+                        <span class="timer-label">Pozostały czas na wykonanie służby:</span>
+                        <div id="duty-timer" class="timer-value">00:00:00</div>
                     </div>
                 </div>
 
@@ -246,6 +256,7 @@
         let currentUser = null;
         let calendar;
         let selectedDate = "";
+        let timerInterval; // NOWA ZMIENNA
 
         function handleLogin() {
             const u = document.getElementById('username').value;
@@ -276,6 +287,35 @@
             if(view === 'home') { checkTodayDuty(); refreshData(); }
         }
 
+        // NOWA FUNKCJA ODLICZANIA
+        function startCountdown() {
+            if(timerInterval) clearInterval(timerInterval);
+            
+            function updateTimer() {
+                const now = new Date();
+                const endOfDay = new Date();
+                endOfDay.setHours(23, 59, 59, 999); // Czas do końca dzisiejszej doby
+
+                const diff = endOfDay - now;
+
+                if (diff <= 0) {
+                    document.getElementById('duty-timer').innerText = "CZAS MINĄŁ!";
+                    clearInterval(timerInterval);
+                    return;
+                }
+
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                document.getElementById('duty-timer').innerText = 
+                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            updateTimer();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
         async function initCalendar() {
             const { data } = await sb.from('sluzby').select('*');
             const events = data ? data.map(r => ({
@@ -304,7 +344,6 @@
             location.reload();
         }
 
-        // RAPORTY KIEROWCY
         async function fillReportSelect() {
             const { data } = await sb.from('sluzby').select('*').eq('kierowca', currentUser.user).eq('status', 'zatwierdzona');
             const sel = document.getElementById('report-service-select');
@@ -321,7 +360,6 @@
             switchView('home');
         }
 
-        // ADMIN
         function fillAdminSelect() { document.getElementById('adm-user-select').innerHTML = USERS.map(u => `<option value="${u.user}">${u.user}</option>`).join(''); }
 
         async function adminAddService() {
@@ -343,7 +381,6 @@
             refreshAdminPanel(); initCalendar();
         }
 
-        // ZATWIERDZANIE KM Z RAPORTU
         async function finalizeReport(id, user) {
             const km = parseFloat(document.getElementById(`final-km-${id}`).value);
             if(isNaN(km)) return alert("Wpisz poprawne KM!");
@@ -359,7 +396,6 @@
             const { data: all } = await sb.from('sluzby').select('*').order('data', { ascending: false });
             if(!all) return;
 
-            // 1. Tabela raportów do sprawdzenia
             const reportsBody = document.getElementById('admin-reports-body');
             const toCheck = all.filter(r => r.status === 'oczekuje_na_spr_raportu');
             reportsBody.innerHTML = toCheck.length ? toCheck.map(r => `
@@ -373,7 +409,6 @@
                 </tr>
             `).join('') : '<tr><td colspan="6">Brak nowych raportów</td></tr>';
 
-            // 2. Tabela wszystkich wniosków
             const requestsBody = document.getElementById('admin-requests-body');
             requestsBody.innerHTML = all.map(r => `
                 <tr>
@@ -402,7 +437,11 @@
                 card.style.display = 'block';
                 document.getElementById('duty-line').innerText = data.linia || "??";
                 document.getElementById('duty-bus').innerText = data.pojazd;
-            } else { card.style.display = 'none'; }
+                startCountdown(); // ODPALAMY LICZNIK JEŚLI JEST SŁUŻBA
+            } else { 
+                card.style.display = 'none'; 
+                if(timerInterval) clearInterval(timerInterval);
+            }
         }
 
         async function refreshData() {
