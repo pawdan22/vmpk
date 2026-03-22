@@ -41,6 +41,15 @@
         .login-box { background: var(--card-bg); padding: 40px; border-radius: 15px; border: 1px solid var(--border); width: 320px; text-align: center; }
         .login-logo { width: 180px; margin-bottom: 20px; }
 
+        /* REKRUTACJA BOX */
+        #recruitment-page { display: none; align-items: center; justify-content: center; height: 100vh; background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.85)), url('https://i.imgur.com/jLWmK8I.jpeg'); background-size: cover; background-position: center; }
+        .recruitment-box { background: var(--card-bg); padding: 40px; border-radius: 15px; border: 1px solid var(--border); width: 450px; text-align: center; max-height: 90vh; overflow-y: auto; }
+        .recruit-step { display: none; text-align: left; }
+        .recruit-step.active { display: block; }
+        #recruit-timer { font-size: 24px; color: var(--yellow); font-family: monospace; display: block; text-align: center; margin-bottom: 15px; }
+        .quiz-option { background: #1a1a1a; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
+        .quiz-option:hover { border-color: var(--yellow); background: #222; }
+
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label { display: block; margin-bottom: 8px; color: var(--text-dim); font-size: 11px; font-weight: bold; text-transform: uppercase; }
         .input-group input, .input-group select, .input-group textarea { width: 100%; padding: 12px; background: #080808; border: 1px solid var(--border); border-radius: 6px; color: #fff; outline: none; box-sizing: border-box; font-family: inherit; }
@@ -136,7 +145,45 @@
                 <input type="password" id="password" placeholder="••••">
             </div>
             <button class="login-btn btn" onclick="handleLogin()">Zaloguj Się</button>
-            <span class="join-link" onclick="showAlert('Rekrutacja', 'Rekrutacja jest obecnie zamknięta. Obserwuj nasze media społecznościowe!', 'info')">Dołącz do nas!</span>
+            <span class="join-link" onclick="checkRecruitmentStatus()">Dołącz do nas!</span>
+        </div>
+    </section>
+
+    <section id="recruitment-page">
+        <div class="recruitment-box">
+            <h2 id="recruit-title" style="color:var(--yellow); margin-bottom: 20px;">Rekrutacja vMPK</h2>
+            
+            <div id="recruit-step-1" class="recruit-step active">
+                <h3 style="font-size: 14px; margin-bottom: 20px;">Uzupełnij swoje dane:</h3>
+                <div class="input-group"><label>Nazwa użytkownika</label><input type="text" id="rec-nick"></div>
+                <div class="input-group"><label>Data urodzenia</label><input type="date" id="rec-birth"></div>
+                <div class="input-group"><label>Adres Email</label><input type="email" id="rec-email"></div>
+                <button class="btn btn-accent" style="width:100%; justify-content:center" onclick="nextRecruitStep(2)">Dalej</button>
+            </div>
+
+            <div id="recruit-step-2" class="recruit-step">
+                <h3 style="color:var(--accent)">Regulamin</h3>
+                <p style="font-size: 13px; line-height: 1.6; color:#ccc;">
+                    Rekrutacja składa się z dwóch części: pytań "O sobie" oraz testu z przepisów ruchu drogowego.<br><br>
+                    Na test drogowy będziesz mieć limit 30 sekund na pytanie.<br><br>
+                    Powodzenia!
+                </p>
+                <button class="btn btn-accent" style="width:100%; justify-content:center; margin-top:20px;" onclick="nextRecruitStep(3)">Zaczynamy!</button>
+            </div>
+
+            <div id="recruit-step-3" class="recruit-step">
+                <div class="input-group"><label>1. Czy pracowałeś/aś w vfirmie? (Jakiej?)</label><textarea id="rec-q1"></textarea></div>
+                <div class="input-group"><label>2. Twoja dyspozycyjność w tygodniu?</label><textarea id="rec-q2"></textarea></div>
+                <div class="input-group"><label>3. Twoje ulubione mapy/gry w Roblox?</label><textarea id="rec-q3"></textarea></div>
+                <div class="input-group"><label>4. Napisz kilka słów o sobie.</label><textarea id="rec-q4"></textarea></div>
+                <div class="input-group"><label>5. Dlaczego chcesz do nas dołączyć?</label><textarea id="rec-q5"></textarea></div>
+                <button class="btn btn-accent" style="width:100%; justify-content:center" onclick="startQuiz()">Przejdź do testu drogowego</button>
+            </div>
+
+            <div id="recruit-step-4" class="recruit-step">
+                <span id="recruit-timer">30s</span>
+                <div id="quiz-container"></div>
+            </div>
         </div>
     </section>
 
@@ -211,6 +258,16 @@
 
             <div id="view-admin" class="view-section">
                 <h1>Panel Dyspozytora</h1>
+                
+                <div id="admin-rec-control" style="background: #161616; padding: 20px; border-radius: 12px; border: 1px solid var(--yellow); margin-bottom: 30px;">
+                    <h3 style="margin-top:0"><i class="fa-solid fa-user-plus"></i> Rekrutacja</h3>
+                    <div style="display:flex; gap:15px; align-items:center">
+                        <span id="adm-rec-status">Status: <b>Ładowanie...</b></span>
+                        <button class="btn btn-green" onclick="setRecStatus(true)">Włącz</button>
+                        <button class="btn btn-accent" onclick="setRecStatus(false)">Wyłącz</button>
+                    </div>
+                </div>
+
                 <div id="admin-controls" style="background: #161616; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px;">
                     <h3><i class="fa-solid fa-plus-circle"></i> Dodaj służbę ręcznie</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 100px 1fr auto; gap: 10px; align-items: end;">
@@ -255,7 +312,90 @@
         let timerInterval;
         let sessionTimeout;
 
-        // UNIWERSALNY SYSTEM ALERTÓW
+        // --- REKRUTACJA LOGIC ---
+        let recTimer;
+        let currentQuizIndex = 0;
+        let quizAnswers = [];
+        const quizQuestions = [
+            { q: "Jaka jest prędkość dopuszczalna autobusu w terenie zabudowanym?", a: ["40 km/h", "50 km/h", "60 km/h"], correct: 1 },
+            { q: "Czy kierowca autobusu może palić podczas jazdy?", a: ["Tak", "Tylko e-papierosy", "Nie"], correct: 2 },
+            { q: "Co oznacza zielona strzałka przy czerwonym świetle?", a: ["Można jechać bez zatrzymania", "Należy się zatrzymać i ustąpić pierwszeństwa", "Można jechać tylko prosto"], correct: 1 },
+            { q: "Jaki odstęp od pojazdu poprzedzającego należy zachować w tunelu (poza zabudowanym)?", a: ["20m", "50m", "80m"], correct: 1 },
+            { q: "Czy pasażerowie mogą stać obok kierowcy w trakcie jazdy?", a: ["Tak", "Nie, za linią bezpieczeństwa", "Tylko znajomi kierowcy"], correct: 1 }
+        ];
+
+        async function checkRecruitmentStatus() {
+            const { data } = await sb.from('settings').select('*').eq('key', 'rec_active').maybeSingle();
+            if(data && data.value === 'true') {
+                document.getElementById('login-page').style.display = 'none';
+                document.getElementById('recruitment-page').style.display = 'flex';
+            } else {
+                showAlert('Rekrutacja', 'Obecnie rekrutacja jest ZAMKNIĘTA.', 'info');
+            }
+        }
+
+        function nextRecruitStep(n) {
+            document.querySelectorAll('.recruit-step').forEach(s => s.classList.remove('active'));
+            document.getElementById('recruit-step-' + n).classList.add('active');
+        }
+
+        function startQuiz() {
+            nextRecruitStep(4);
+            showQuizQuestion();
+        }
+
+        function showQuizQuestion() {
+            if(currentQuizIndex >= quizQuestions.length) {
+                finishRecruitment();
+                return;
+            }
+            const q = quizQuestions[currentQuizIndex];
+            const cont = document.getElementById('quiz-container');
+            cont.innerHTML = `<p style="margin-bottom:15px; font-weight:bold">${currentQuizIndex+1}. ${q.q}</p>
+                ${q.a.map((opt, i) => `<div class="quiz-option" onclick="handleQuizAnswer(${i})">${opt}</div>`).join('')}`;
+            
+            let time = 30;
+            document.getElementById('recruit-timer').innerText = time + 's';
+            clearInterval(recTimer);
+            recTimer = setInterval(() => {
+                time--;
+                document.getElementById('recruit-timer').innerText = time + 's';
+                if(time <= 0) handleQuizAnswer(-1);
+            }, 1000);
+        }
+
+        function handleQuizAnswer(idx) {
+            clearInterval(recTimer);
+            quizAnswers.push(idx);
+            currentQuizIndex++;
+            showQuizQuestion();
+        }
+
+        async function finishRecruitment() {
+            const payload = {
+                nick: document.getElementById('rec-nick').value,
+                birth: document.getElementById('rec-birth').value,
+                email: document.getElementById('rec-email').value,
+                q_sobie: [
+                    document.getElementById('rec-q1').value,
+                    document.getElementById('rec-q2').value,
+                    document.getElementById('rec-q3').value,
+                    document.getElementById('rec-q4').value,
+                    document.getElementById('rec-q5').value
+                ],
+                quiz: quizAnswers
+            };
+            await sb.from('rekrutacja').insert([payload]);
+            showAlert('Sukces', 'Zgłoszenie wysłane! Czekaj na info.', 'success');
+            setTimeout(() => location.reload(), 2500);
+        }
+
+        async function setRecStatus(val) {
+            await sb.from('settings').upsert({ key: 'rec_active', value: val.toString() });
+            refreshAdminPanel();
+        }
+        // --- END REKRUTACJA ---
+
         function showAlert(title, msg, type = 'info') {
             const modal = document.getElementById('system-modal');
             const border = document.getElementById('system-modal-border');
@@ -442,7 +582,6 @@
         }
 
         async function deleteService(id) { 
-            // Tutaj zostawiłem confirm systemowy, bo to ważna akcja, ale jak chcesz to też możemy zrobić modal
             if(confirm("Czy na pewno chcesz usunąć tę służbę?")) { 
                 await sb.from('sluzby').delete().eq('id', id); 
                 showAlert('Admin', 'Służba usunięta.', 'info');
@@ -451,6 +590,13 @@
         }
 
         async function refreshAdminPanel() {
+            // Status rekrutacji
+            const { data: recSetting } = await sb.from('settings').select('*').eq('key', 'rec_active').maybeSingle();
+            const statusBox = document.getElementById('adm-rec-status');
+            if(recSetting) {
+                statusBox.innerHTML = `Status: <b style="color:${recSetting.value === 'true' ? 'var(--green)' : 'var(--accent)'}">${recSetting.value === 'true' ? 'WŁĄCZONA' : 'WYŁĄCZONA'}</b>`;
+            }
+
             const { data: all } = await sb.from('sluzby').select('*').order('data', { ascending: false });
             if(!all) return;
             const reportsBody = document.getElementById('admin-reports-body');
