@@ -673,6 +673,16 @@
                 ).join('');
             }
         }
+        async function deleteRec(id) {
+    if(confirm("Czy na pewno chcesz usunąć to podanie?")) {
+        const { error } = await sb.from('rekrutacja').delete().eq('id', id);
+        if (error) {
+            alert("Błąd podczas usuwania: " + error.message);
+        } else {
+            refreshAdminPanel();
+        }
+    }
+}
     </script>
 </body>
 </html>
