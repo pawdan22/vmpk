@@ -391,8 +391,16 @@
         }
 
         async function setRecStatus(val) {
-            await sb.from('settings').upsert({ key: 'rec_active', value: val.toString() });
-            refreshAdminPanel();
+            const statusBox = document.getElementById('adm-rec-status');
+            statusBox.innerHTML = 'Status: <b>Zmieniam...</b>';
+            try {
+                const { error } = await sb.from('settings').upsert({ key: 'rec_active', value: val.toString() });
+                if (error) throw error;
+                refreshAdminPanel();
+            } catch (err) {
+                showAlert('Błąd', 'Nie udało się zmienić statusu w bazie.', 'error');
+                statusBox.innerHTML = 'Status: <b style="color:red">BŁĄD</b>';
+            }
         }
         // --- END REKRUTACJA ---
 
@@ -590,12 +598,14 @@
         }
 
         async function refreshAdminPanel() {
-            // Status rekrutacji
-            const { data: recSetting } = await sb.from('settings').select('*').eq('key', 'rec_active').maybeSingle();
-            const statusBox = document.getElementById('adm-rec-status');
-            if(recSetting) {
-                statusBox.innerHTML = `Status: <b style="color:${recSetting.value === 'true' ? 'var(--green)' : 'var(--accent)'}">${recSetting.value === 'true' ? 'WŁĄCZONA' : 'WYŁĄCZONA'}</b>`;
-            }
+            try {
+                const { data: recSetting } = await sb.from('settings').select('*').eq('key', 'rec_active').maybeSingle();
+                const statusBox = document.getElementById('adm-rec-status');
+                if(recSetting) {
+                    const active = recSetting.value === 'true';
+                    statusBox.innerHTML = `Status: <b style="color:${active ? 'var(--green)' : 'var(--accent)'}">${active ? 'WŁĄCZONA' : 'WYŁĄCZONA'}</b>`;
+                } else { statusBox.innerHTML = 'Status: <b style="color:var(--text-dim)">WYŁĄCZONA</b>'; }
+            } catch (err) { document.getElementById('adm-rec-status').innerHTML = 'Status: <b style="color:red">BŁĄD</b>'; }
 
             const { data: all } = await sb.from('sluzby').select('*').order('data', { ascending: false });
             if(!all) return;
