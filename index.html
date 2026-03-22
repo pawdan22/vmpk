@@ -58,17 +58,20 @@
         }
 
         window.onload = async () => {
-            // 🔥 KLUCZOWE — bez tego OAuth nie działa poprawnie
-            await sb.auth.exchangeCodeForSession(window.location.href);
+            // 🔥 Supabase sam pobiera session z #access_token
+            const { data, error } = await sb.auth.getSession();
 
-            const { data: { session } } = await sb.auth.getSession();
+            console.log("SESSION:", data, error);
 
-            if (session) {
+            if (data.session) {
                 document.getElementById('logged-out').style.display = 'none';
                 document.getElementById('logged-in').style.display = 'block';
 
                 document.getElementById('user').innerText =
-                    "zalogowany jako: " + session.user.user_metadata.full_name;
+                    "zalogowany jako: " + data.session.user.user_metadata.full_name;
+
+                // 🔥 czyści URL z tokena
+                window.history.replaceState({}, document.title, window.location.pathname);
             }
         };
     </script>
