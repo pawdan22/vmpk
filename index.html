@@ -21,6 +21,7 @@
 
         body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text); font-family: 'Segoe UI', Roboto, sans-serif; overflow: hidden; }
 
+        /* MODALE */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center;
@@ -30,10 +31,12 @@
             width: 400px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.8);
         }
         
+        /* KALENDARZ */
         .calendar-container { background: var(--card-bg); width: 90%; max-width: 900px; padding: 25px; border-radius: 15px; position: relative; }
         .fc { color: #fff; background: #161616; padding: 10px; border-radius: 8px; border: 1px solid var(--border); max-height: 70vh; }
         .fc-event { border: none !important; cursor: help; padding: 2px; }
 
+        /* LOGOWANIE */
         #login-page { display: flex; align-items: center; justify-content: center; height: 100vh; background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.85)), url('https://i.imgur.com/jLWmK8I.jpeg'); background-size: cover; background-position: center; }
         .login-box { background: var(--card-bg); padding: 40px; border-radius: 15px; border: 1px solid var(--border); width: 320px; text-align: center; }
         .login-logo { width: 180px; margin-bottom: 20px; }
@@ -51,6 +54,7 @@
         .join-link { display: block; margin-top: 15px; color: var(--yellow); text-decoration: none; font-size: 14px; cursor: pointer; transition: 0.3s; opacity: 0.8; }
         .join-link:hover { opacity: 1; text-decoration: underline; }
 
+        /* DASHBOARD */
         #dashboard { display: none; height: 100vh; grid-template-columns: 260px 1fr; }
         aside { background: var(--card-bg); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
         .nav-logo { width: 140px; margin-bottom: 40px; align-self: center; }
@@ -89,12 +93,12 @@
 </head>
 <body onclick="resetSessionTimer()">
 
-    <div id="recruit-modal" class="modal-overlay">
-        <div class="v-modal" style="border-top: 4px solid var(--accent);">
-            <i class="fa-solid fa-circle-info" style="font-size: 40px; color: var(--accent); margin-bottom: 15px;"></i>
-            <h3 style="color:var(--text); margin-bottom: 10px;">Status Rekrutacji</h3>
-            <p style="color:var(--text-dim); line-height: 1.5;">Rekrutacja jest obecnie zamknięta.<br>Obserwuj nasze media społecznościowe!</p>
-            <button class="btn btn-accent" style="margin-top: 20px; min-width: 100px; justify-content: center;" onclick="closeAll()">OK</button>
+    <div id="system-modal" class="modal-overlay">
+        <div class="v-modal" id="system-modal-border" style="border-top: 4px solid var(--accent);">
+            <i id="system-modal-icon" class="fa-solid fa-circle-info" style="font-size: 40px; color: var(--accent); margin-bottom: 15px;"></i>
+            <h3 id="system-modal-title" style="color:var(--text); margin-bottom: 10px;">Komunikat</h3>
+            <p id="system-modal-msg" style="color:var(--text-dim); line-height: 1.5;"></p>
+            <button class="btn btn-accent" id="system-modal-btn" style="margin-top: 20px; min-width: 100px; justify-content: center;" onclick="closeAll()">OK</button>
         </div>
     </div>
 
@@ -132,7 +136,7 @@
                 <input type="password" id="password" placeholder="••••">
             </div>
             <button class="login-btn btn" onclick="handleLogin()">Zaloguj Się</button>
-            <span class="join-link" onclick="openRecruitModal()">Dołącz do nas!</span>
+            <span class="join-link" onclick="showAlert('Rekrutacja', 'Rekrutacja jest obecnie zamknięta. Obserwuj nasze media społecznościowe!', 'info')">Dołącz do nas!</span>
         </div>
     </section>
 
@@ -207,47 +211,27 @@
 
             <div id="view-admin" class="view-section">
                 <h1>Panel Dyspozytora</h1>
-                
-                <div style="background: #161616; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px;">
+                <div id="admin-controls" style="background: #161616; padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 30px;">
                     <h3><i class="fa-solid fa-plus-circle"></i> Dodaj służbę ręcznie</h3>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 100px 1fr auto; gap: 10px; align-items: end;">
-                        <div class="input-group" style="margin:0">
-                            <label>Kierowca</label>
-                            <select id="adm-user-select"></select>
-                        </div>
-                        <div class="input-group" style="margin:0">
-                            <label>Data</label>
-                            <input type="date" id="adm-date">
-                        </div>
-                        <div class="input-group" style="margin:0">
-                            <label>Autobus</label>
-                            <input type="text" id="adm-bus" placeholder="np. Solaris">
-                        </div>
-                        <div class="input-group" style="margin:0">
-                            <label>Linia</label>
-                            <input type="text" id="adm-line" placeholder="L-1">
-                        </div>
-                        <div class="input-group" style="margin:0">
-                            <label>KM</label>
-                            <input type="number" id="adm-km" placeholder="0.0">
-                        </div>
+                        <div class="input-group" style="margin:0"><label>Kierowca</label><select id="adm-user-select"></select></div>
+                        <div class="input-group" style="margin:0"><label>Data</label><input type="date" id="adm-date"></div>
+                        <div class="input-group" style="margin:0"><label>Autobus</label><input type="text" id="adm-bus" placeholder="np. Solaris"></div>
+                        <div class="input-group" style="margin:0"><label>Linia</label><input type="text" id="adm-line" placeholder="L-1"></div>
+                        <div class="input-group" style="margin:0"><label>KM</label><input type="number" id="adm-km" placeholder="0.0"></div>
                         <button class="btn btn-yellow" onclick="adminAddService()">Dodaj</button>
                     </div>
                 </div>
 
                 <h3 style="color:var(--yellow)"><i class="fa-solid fa-check-double"></i> Raporty do sprawdzenia</h3>
                 <table>
-                    <thead>
-                        <tr><th>KIEROWCA</th><th>LINIA</th><th>KM (KIEROWCA)</th><th>DOWÓD</th><th>ZATWIERDŹ KM</th><th>AKCJA</th></tr>
-                    </thead>
+                    <thead><tr><th>KIEROWCA</th><th>LINIA</th><th>KM</th><th>DOWÓD</th><th>ZATWIERDŹ KM</th><th>AKCJA</th></tr></thead>
                     <tbody id="admin-reports-body"></tbody>
                 </table>
 
                 <h3 style="margin-top:40px;"><i class="fa-solid fa-list-check"></i> Wszystkie wnioski o służbę</h3>
                 <table>
-                    <thead>
-                        <tr><th>DATA</th><th>KIEROWCA</th><th>POJAZD</th><th>LINIA</th><th>STATUS</th><th>AKCJA</th></tr>
-                    </thead>
+                    <thead><tr><th>DATA</th><th>KIEROWCA</th><th>POJAZD</th><th>LINIA</th><th>STATUS</th><th>AKCJA</th></tr></thead>
                     <tbody id="admin-requests-body"></tbody>
                 </table>
             </div>
@@ -271,9 +255,33 @@
         let timerInterval;
         let sessionTimeout;
 
-        // FUNKCJE OBSŁUGI MODALA REKRUTACJI
-        function openRecruitModal() {
-            document.getElementById('recruit-modal').style.display = 'flex';
+        // UNIWERSALNY SYSTEM ALERTÓW
+        function showAlert(title, msg, type = 'info') {
+            const modal = document.getElementById('system-modal');
+            const border = document.getElementById('system-modal-border');
+            const icon = document.getElementById('system-modal-icon');
+            const btn = document.getElementById('system-modal-btn');
+            
+            document.getElementById('system-modal-title').innerText = title;
+            document.getElementById('system-modal-msg').innerText = msg;
+
+            if(type === 'success') {
+                border.style.borderTopColor = 'var(--green)';
+                icon.style.color = 'var(--green)';
+                icon.className = 'fa-solid fa-circle-check';
+                btn.className = 'btn btn-green';
+            } else if(type === 'error') {
+                border.style.borderTopColor = 'var(--accent)';
+                icon.style.color = 'var(--accent)';
+                icon.className = 'fa-solid fa-circle-xmark';
+                btn.className = 'btn btn-accent';
+            } else {
+                border.style.borderTopColor = 'var(--yellow)';
+                icon.style.color = 'var(--yellow)';
+                icon.className = 'fa-solid fa-circle-info';
+                btn.className = 'btn btn-yellow';
+            }
+            modal.style.display = 'flex';
         }
 
         function closeAll() { 
@@ -283,15 +291,12 @@
         window.onload = function() {
             const savedUser = localStorage.getItem('vmpk_user');
             const sessionTime = localStorage.getItem('vmpk_session_start');
-            
             if (savedUser && sessionTime) {
                 const now = new Date().getTime();
                 if (now - sessionTime < 30 * 60 * 1000) {
                     currentUser = JSON.parse(savedUser);
                     showDashboard();
-                } else {
-                    handleLogout();
-                }
+                } else { handleLogout(); }
             }
         };
 
@@ -307,13 +312,12 @@
             const u = document.getElementById('username').value;
             const p = document.getElementById('password').value;
             const foundUser = USERS.find(item => item.user === u && item.pass === p);
-
             if(foundUser) {
                 currentUser = foundUser;
                 localStorage.setItem('vmpk_user', JSON.stringify(currentUser));
                 localStorage.setItem('vmpk_session_start', new Date().getTime());
                 showDashboard();
-            } else { alert("Błąd logowania!"); }
+            } else { showAlert('Błąd', 'Nieprawidłowy login lub hasło!', 'error'); }
         }
 
         function handleLogout() {
@@ -349,22 +353,15 @@
             if(timerInterval) clearInterval(timerInterval);
             function updateTimer() {
                 const now = new Date();
-                const endOfDay = new Date();
-                endOfDay.setHours(23, 59, 59, 999);
+                const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999);
                 const diff = endOfDay - now;
-                if (diff <= 0) {
-                    document.getElementById('duty-timer').innerText = "CZAS MINĄŁ!";
-                    clearInterval(timerInterval);
-                    return;
-                }
+                if (diff <= 0) { document.getElementById('duty-timer').innerText = "CZAS MINĄŁ!"; clearInterval(timerInterval); return; }
                 const hours = Math.floor(diff / (1000 * 60 * 60));
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
                 const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                document.getElementById('duty-timer').innerText = 
-                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                document.getElementById('duty-timer').innerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
             }
-            updateTimer();
-            timerInterval = setInterval(updateTimer, 1000);
+            updateTimer(); timerInterval = setInterval(updateTimer, 1000);
         }
 
         async function initCalendar() {
@@ -393,6 +390,7 @@
             await sb.from('sluzby').insert([{ kierowca: currentUser.user, data: selectedDate, pojazd: pref || "Dowolny", status: 'oczekujący' }]);
             closeAll();
             initCalendar();
+            showAlert('Sukces', 'Twój wniosek o służbę został wysłany!', 'success');
         }
 
         async function fillReportSelect() {
@@ -405,11 +403,10 @@
             const id = document.getElementById('report-service-select').value;
             const km = document.getElementById('report-km').value;
             const scr = document.getElementById('report-scr').value;
-            if(!id || !km || !scr) return alert("Uzupełnij wszystkie pola!");
+            if(!id || !km || !scr) { showAlert('Błąd', 'Uzupełnij wszystkie pola raportu!', 'error'); return; }
             await sb.from('sluzby').update({ status: 'oczekuje_na_spr_raportu', raport_km: km, raport_scr: scr }).eq('id', id);
-            alert("Raport wysłany!");
-            checkTodayDuty();
-            switchView('home');
+            showAlert('Raport', 'Raport wysłany do sprawdzenia!', 'success');
+            checkTodayDuty(); switchView('home');
         }
 
         function fillAdminSelect() { document.getElementById('adm-user-select').innerHTML = USERS.map(u => `<option value="${u.user}">${u.user}</option>`).join(''); }
@@ -420,29 +417,38 @@
             const bus = document.getElementById('adm-bus').value;
             const line = document.getElementById('adm-line').value;
             const km = parseFloat(document.getElementById('adm-km').value) || 0;
-            if(!date) return alert("Podaj datę!");
+            if(!date) { showAlert('Błąd', 'Podaj datę służby!', 'error'); return; }
             await sb.from('sluzby').insert([{ kierowca: user, data: date, pojazd: bus, linia: line, status: 'zatwierdzona' }]);
             if(km > 0) await sb.from('stats').insert([{ username: user, kilometers: km }]);
+            showAlert('Admin', 'Służba dodana pomyślnie!', 'success');
             refreshAdminPanel(); refreshData();
         }
 
         async function approveService(id) {
             const line = document.getElementById(`line-input-${id}`).value;
-            if(!line) return alert("Wpisz linię!");
+            if(!line) { showAlert('Błąd', 'Wpisz numer linii!', 'error'); return; }
             await sb.from('sluzby').update({ status: 'zatwierdzona', linia: line }).eq('id', id);
+            showAlert('Admin', 'Służba została zatwierdzona!', 'success');
             refreshAdminPanel(); initCalendar();
         }
 
         async function finalizeReport(id, user) {
             const km = parseFloat(document.getElementById(`final-km-${id}`).value);
-            if(isNaN(km)) return alert("Wpisz poprawne KM!");
+            if(isNaN(km)) { showAlert('Błąd', 'Wpisz poprawną liczbę kilometrów!', 'error'); return; }
             await sb.from('stats').insert([{ username: user, kilometers: km }]);
             await sb.from('sluzby').update({ status: 'zakończona' }).eq('id', id);
-            alert("KM dodane do rankingu!");
+            showAlert('Ranking', 'Kilometry dodane do rankingu!', 'success');
             refreshAdminPanel(); refreshData();
         }
 
-        async function deleteService(id) { if(confirm("Usunąć?")) { await sb.from('sluzby').delete().eq('id', id); refreshAdminPanel(); } }
+        async function deleteService(id) { 
+            // Tutaj zostawiłem confirm systemowy, bo to ważna akcja, ale jak chcesz to też możemy zrobić modal
+            if(confirm("Czy na pewno chcesz usunąć tę służbę?")) { 
+                await sb.from('sluzby').delete().eq('id', id); 
+                showAlert('Admin', 'Służba usunięta.', 'info');
+                refreshAdminPanel(); 
+            } 
+        }
 
         async function refreshAdminPanel() {
             const { data: all } = await sb.from('sluzby').select('*').order('data', { ascending: false });
@@ -452,8 +458,7 @@
             reportsBody.innerHTML = toCheck.length ? toCheck.map(r => `
                 <tr>
                     <td style="color:var(--yellow)">${r.kierowca}</td>
-                    <td>${r.linia}</td>
-                    <td>${r.raport_km} km</td>
+                    <td>${r.linia}</td><td>${r.raport_km} km</td>
                     <td><a href="${r.raport_scr}" target="_blank" style="color:cyan">POKAŻ SCREEN</a></td>
                     <td><input type="number" id="final-km-${r.id}" value="${r.raport_km}" style="width:60px; background:#000; color:#fff; border:1px solid #444; padding:5px;"></td>
                     <td><button class="btn btn-yellow" style="padding:5px 10px" onclick="finalizeReport(${r.id}, '${r.kierowca}')">ZATWIERDŹ</button></td>
@@ -462,18 +467,11 @@
             const requestsBody = document.getElementById('admin-requests-body');
             requestsBody.innerHTML = all.map(r => `
                 <tr>
-                    <td>${r.data}</td>
-                    <td style="color:var(--yellow)">${r.kierowca}</td>
-                    <td>${r.pojazd}</td>
-                    <td>${r.linia || '---'}</td>
+                    <td>${r.data}</td><td style="color:var(--yellow)">${r.kierowca}</td><td>${r.pojazd}</td><td>${r.linia || '---'}</td>
                     <td><span class="badge ${r.status === 'zatwierdzona' ? 'badge-active' : (r.status === 'oczekuje_na_spr_raportu' ? 'badge-review' : 'badge-pending')}">${r.status}</span></td>
                     <td>
-                        ${r.status === 'oczekujący' ? `
-                            <div class="approve-box">
-                                <input type="text" id="line-input-${r.id}" placeholder="Linia">
-                                <button class="btn btn-green" style="padding:5px" onclick="approveService(${r.id})">OK</button>
-                            </div>
-                        ` : `<button class="btn btn-accent" style="padding:5px 10px; font-size:10px" onclick="deleteService(${r.id})">USUŃ</button>`}
+                        ${r.status === 'oczekujący' ? `<div class="approve-box"><input type="text" id="line-input-${r.id}" placeholder="Linia"><button class="btn btn-green" style="padding:5px" onclick="approveService(${r.id})">OK</button></div>` 
+                        : `<button class="btn btn-accent" style="padding:5px 10px; font-size:10px" onclick="deleteService(${r.id})">USUŃ</button>`}
                     </td>
                 </tr>
             `).join('');
@@ -488,10 +486,7 @@
                 document.getElementById('duty-line').innerText = data.linia || "??";
                 document.getElementById('duty-bus').innerText = data.pojazd;
                 startCountdown();
-            } else { 
-                card.style.display = 'none'; 
-                if(timerInterval) clearInterval(timerInterval);
-            }
+            } else { card.style.display = 'none'; if(timerInterval) clearInterval(timerInterval); }
         }
 
         async function refreshData() {
