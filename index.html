@@ -48,6 +48,9 @@
         .btn-green { background: var(--green); color: #fff; }
         .login-btn { width: 100%; background: var(--accent); justify-content: center; }
 
+        .join-link { display: block; margin-top: 15px; color: var(--yellow); text-decoration: none; font-size: 14px; cursor: pointer; transition: 0.3s; opacity: 0.8; }
+        .join-link:hover { opacity: 1; text-decoration: underline; }
+
         #dashboard { display: none; height: 100vh; grid-template-columns: 260px 1fr; }
         aside { background: var(--card-bg); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; }
         .nav-logo { width: 140px; margin-bottom: 40px; align-self: center; }
@@ -86,6 +89,15 @@
 </head>
 <body onclick="resetSessionTimer()">
 
+    <div id="recruit-modal" class="modal-overlay">
+        <div class="v-modal" style="border-top: 4px solid var(--accent);">
+            <i class="fa-solid fa-circle-info" style="font-size: 40px; color: var(--accent); margin-bottom: 15px;"></i>
+            <h3 style="color:var(--text); margin-bottom: 10px;">Status Rekrutacji</h3>
+            <p style="color:var(--text-dim); line-height: 1.5;">Rekrutacja jest obecnie zamknięta.<br>Obserwuj nasze media społecznościowe!</p>
+            <button class="btn btn-accent" style="margin-top: 20px; min-width: 100px; justify-content: center;" onclick="closeAll()">OK</button>
+        </div>
+    </div>
+
     <div id="calendar-modal" class="modal-overlay">
         <div class="calendar-container">
             <span style="position:absolute; right:20px; top:15px; cursor:pointer;" onclick="closeAll()"><i class="fa-solid fa-xmark"></i></span>
@@ -120,6 +132,7 @@
                 <input type="password" id="password" placeholder="••••">
             </div>
             <button class="login-btn btn" onclick="handleLogin()">Zaloguj Się</button>
+            <span class="join-link" onclick="openRecruitModal()">Dołącz do nas!</span>
         </div>
     </section>
 
@@ -258,14 +271,22 @@
         let timerInterval;
         let sessionTimeout;
 
-        // SPRAWDZANIE SESJI PRZY STARCIE
+        // FUNKCJE OBSŁUGI MODALA REKRUTACJI
+        function openRecruitModal() {
+            document.getElementById('recruit-modal').style.display = 'flex';
+        }
+
+        function closeAll() { 
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); 
+        }
+
         window.onload = function() {
             const savedUser = localStorage.getItem('vmpk_user');
             const sessionTime = localStorage.getItem('vmpk_session_start');
             
             if (savedUser && sessionTime) {
                 const now = new Date().getTime();
-                if (now - sessionTime < 30 * 60 * 1000) { // 30 min w ms
+                if (now - sessionTime < 30 * 60 * 1000) {
                     currentUser = JSON.parse(savedUser);
                     showDashboard();
                 } else {
@@ -366,7 +387,6 @@
         }
 
         function openCalendar() { document.getElementById('calendar-modal').style.display = 'flex'; setTimeout(() => calendar.render(), 100); }
-        function closeAll() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); }
 
         async function submitService() {
             const pref = document.getElementById('pref-input').value;
