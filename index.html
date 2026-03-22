@@ -2,79 +2,86 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>test discord auth</title>
+    <title>vmpk - panel</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { 
-            background: #000; 
-            color: #fff; 
-            font-family: sans-serif; 
-            text-align: center; 
-            padding: 50px; 
-        }
-        .btn { 
-            background: #5865F2; 
-            color: white; 
-            border: none; 
-            padding: 20px; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            font-weight: bold; 
-        }
+        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 50px; }
+        .btn { background: #5865F2; color: white; border: none; padding: 20px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .card { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333; display: inline-block; }
     </style>
 </head>
 <body>
 
-    <h1>test logowania</h1>
+<div class="card">
+    <h1>vmpk drobin - panel</h1>
 
     <div id="logged-out">
         <button class="btn" onclick="login()">zaloguj przez discord</button>
     </div>
 
     <div id="logged-in" style="display:none;">
-        <h2>dziala :)</h2>
+        <h2>działa :)</h2>
         <p id="user"></p>
         <button class="btn" onclick="logout()">wyloguj</button>
     </div>
+</div>
 
-    <script>
-        const sb = window.supabase.createClient(
-            'https://rgkpsalluqhncepieuht.supabase.co', 
-            'sb_publishable_UVLQNk4RSTuFZsjTJilDeA_M62'
-        );
-
-        async function login() {
-            await sb.auth.signInWithOAuth({ 
-                provider: 'discord',
-                options: { 
-                    redirectTo: window.location.origin + window.location.pathname
-                }
-            });
+<script>
+const sb = window.supabase.createClient(
+    'https://rgkpsalluqhncepieuht.supabase.co', 
+    'sb_publishable_UVLQNk4RSTuFZsjTJilDeA_M62',
+    {
+        auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true
         }
+    }
+);
 
-        async function logout() {
-            await sb.auth.signOut();
-            location.reload();
+async function login() {
+    await sb.auth.signInWithOAuth({ 
+        provider: 'discord',
+        options: { 
+            redirectTo: window.location.origin + window.location.pathname
         }
+    });
+}
 
-        window.onload = async () => {
-            // 🔥 Supabase sam pobiera session z #access_token
-            const { data, error } = await sb.auth.getSession();
+async function logout() {
+    await sb.auth.signOut();
+    location.reload();
+}
 
-            console.log("SESSION:", data, error);
+// 🔥 TO JEST KLUCZ
+sb.auth.onAuthStateChange((event, session) => {
+    console.log("AUTH EVENT:", event);
 
-            if (data.session) {
-                document.getElementById('logged-out').style.display = 'none';
-                document.getElementById('logged-in').style.display = 'block';
+    if (session) {
+        document.getElementById('logged-out').style.display = 'none';
+        document.getElementById('logged-in').style.display = 'block';
 
-                document.getElementById('user').innerText =
-                    "zalogowany jako: " + data.session.user.user_metadata.full_name;
+        document.getElementById('user').innerText =
+            "zalogowany jako: " + session.user.user_metadata.full_name;
 
-                // 🔥 czyści URL z tokena
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
-        };
-    </script>
+        // czyści URL z tokena
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
+
+// fallback przy odświeżeniu
+window.onload = async () => {
+    const { data } = await sb.auth.getSession();
+
+    if (data.session) {
+        document.getElementById('logged-out').style.display = 'none';
+        document.getElementById('logged-in').style.display = 'block';
+
+        document.getElementById('user').innerText =
+            "zalogowany jako: " + data.session.user.user_metadata.full_name;
+    }
+};
+</script>
 
 </body>
 </html>
