@@ -2,35 +2,39 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <title>vmpk - panel</title>
+    <title>test discord auth</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 50px; text-transform: lowercase; }
-        .btn { background: #5865F2; color: white; border: none; padding: 20px; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; max-width: 300px; }
-        .card { background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333; display: inline-block; min-width: 300px; }
-        #ranking { margin-top: 30px; text-align: left; font-size: 14px; border-top: 1px solid #333; padding-top: 20px; }
-        .user-row { display: flex; justify-content: space-between; margin-bottom: 5px; background: #222; padding: 10px; border-radius: 5px; }
+        body { 
+            background: #000; 
+            color: #fff; 
+            font-family: sans-serif; 
+            text-align: center; 
+            padding: 50px; 
+        }
+        .btn { 
+            background: #5865F2; 
+            color: white; 
+            border: none; 
+            padding: 20px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h1>vmpk drobin - panel</h1>
-        
-        <div id="u-info" style="display:none">
-            <h2 id="u-name">siema!</h2>
-            <button class="btn" onclick="add()" style="background:#e74c3c">dodaj km</button>
-            
-            <div id="ranking">
-                <strong>ranking kierowców:</strong>
-                <div id="lista-rankingowa" style="margin-top:10px;">wczytuję...</div>
-            </div>
 
-            <p onclick="logout()" style="color:#444; cursor:pointer; font-size:10px; margin-top:20px;">wyloguj</p>
-        </div>
+    <h1>test logowania</h1>
 
-        <div id="l-info">
-            <button class="btn" onclick="login()">zaloguj przez discord</button>
-        </div>
+    <div id="logged-out">
+        <button class="btn" onclick="login()">zaloguj przez discord</button>
+    </div>
+
+    <div id="logged-in" style="display:none;">
+        <h2>dziala :)</h2>
+        <p id="user"></p>
+        <button class="btn" onclick="logout()">wyloguj</button>
     </div>
 
     <script>
@@ -39,13 +43,12 @@
             'sb_publishable_UVLQNk4RSTuFZsjTJilDeA_M62'
         );
 
-        // WPISANE NA SZTYWNO, ŻEBY UNIKNĄĆ BŁĘDU 404
-        const MY_URL = 'https://pawdan22.github.io/vmpk/';
-
         async function login() {
             await sb.auth.signInWithOAuth({ 
                 provider: 'discord',
-                options: { redirectTo: MY_URL }
+                options: { 
+                    redirectTo: window.location.origin + window.location.pathname
+                }
             });
         }
 
@@ -54,51 +57,21 @@
             location.reload();
         }
 
-        async function pobierzRanking() {
-            const { data, error } = await sb.from('stats').select('username, kilometers');
-            if (!error && data) {
-                const podsumowanie = {};
-                data.forEach(wpis => {
-                    const name = wpis.username || 'anonim';
-                    podsumowanie[name] = (podsumowanie[name] || 0) + wpis.kilometers;
-                });
-                const html = Object.entries(podsumowanie)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([user, km]) => `<div class="user-row"><span>${user}</span> <b>${km.toFixed(1)} km</b></div>`)
-                    .join('');
-                document.getElementById('lista-rankingowa').innerHTML = html || "brak danych";
-            }
-        }
-
         window.onload = async () => {
+            // 🔥 KLUCZOWE — bez tego OAuth nie działa poprawnie
+            await sb.auth.exchangeCodeForSession(window.location.href);
+
             const { data: { session } } = await sb.auth.getSession();
+
             if (session) {
-                document.getElementById('l-info').style.display = 'none';
-                document.getElementById('u-info').style.display = 'block';
-                document.getElementById('u-name').innerText = "siema, " + (session.user.user_metadata.full_name || 'kierowca');
-                pobierzRanking();
-                // czyści pasek adresu z tokenów
-                window.history.replaceState(null, null, window.location.pathname);
+                document.getElementById('logged-out').style.display = 'none';
+                document.getElementById('logged-in').style.display = 'block';
+
+                document.getElementById('user').innerText =
+                    "zalogowany jako: " + session.user.user_metadata.full_name;
             }
         };
-
-        async function add() {
-            const k = prompt("ile km przejechane?");
-            if(k && !isNaN(k)) {
-                const { data: { user } } = await sb.auth.getUser();
-                const { error } = await sb.from('stats').insert([{ 
-                    user_id: user.id, 
-                    kilometers: parseFloat(k),
-                    username: user.user_metadata.full_name || user.email
-                }]);
-                
-                if (error) alert("błąd zapisu: " + error.message);
-                else {
-                    alert("dodano " + k + " km!");
-                    pobierzRanking();
-                }
-            }
-        }
     </script>
+
 </body>
 </html>
