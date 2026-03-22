@@ -66,7 +66,6 @@
 
         .today-duty-card { background: linear-gradient(135deg, #1a1a1a 0%, #050505 100%); border: 1px solid var(--yellow); padding: 25px; border-radius: 15px; margin-bottom: 30px; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 
-        /* NOWY STYL DLA TIMERA */
         .timer-box { margin-top: 15px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; border-left: 3px solid var(--yellow); display: flex; flex-direction: column; gap: 4px; }
         .timer-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
         .timer-value { font-size: 18px; font-weight: bold; color: var(--yellow); font-family: 'Courier New', Courier, monospace; }
@@ -256,7 +255,7 @@
         let currentUser = null;
         let calendar;
         let selectedDate = "";
-        let timerInterval; // NOWA ZMIENNA
+        let timerInterval;
 
         function handleLogin() {
             const u = document.getElementById('username').value;
@@ -287,15 +286,13 @@
             if(view === 'home') { checkTodayDuty(); refreshData(); }
         }
 
-        // NOWA FUNKCJA ODLICZANIA
         function startCountdown() {
             if(timerInterval) clearInterval(timerInterval);
             
             function updateTimer() {
                 const now = new Date();
                 const endOfDay = new Date();
-                endOfDay.setHours(23, 59, 59, 999); // Czas do końca dzisiejszej doby
-
+                endOfDay.setHours(23, 59, 59, 999);
                 const diff = endOfDay - now;
 
                 if (diff <= 0) {
@@ -355,8 +352,11 @@
             const km = document.getElementById('report-km').value;
             const scr = document.getElementById('report-scr').value;
             if(!id || !km || !scr) return alert("Uzupełnij wszystkie pola!");
+            
             await sb.from('sluzby').update({ status: 'oczekuje_na_spr_raportu', raport_km: km, raport_scr: scr }).eq('id', id);
-            alert("Raport wysłany! Czekaj na zatwierdzenie KM przez admina.");
+            
+            alert("Raport wysłany! Służba zniknie z panelu głównego.");
+            checkTodayDuty(); // Aktualizacja widoku karty
             switchView('home');
         }
 
@@ -431,13 +431,20 @@
 
         async function checkTodayDuty() {
             const dzis = new Date().toISOString().split('T')[0];
-            const { data } = await sb.from('sluzby').select('*').eq('kierowca', currentUser.user).eq('data', dzis).eq('status', 'zatwierdzona').single();
+            // Pobieramy tylko te, które są 'zatwierdzona' - jeśli status zmienił się na 'oczekuje_na_spr_raportu', zapytanie nic nie zwróci
+            const { data } = await sb.from('sluzby')
+                .select('*')
+                .eq('kierowca', currentUser.user)
+                .eq('data', dzis)
+                .eq('status', 'zatwierdzona')
+                .maybeSingle();
+
             const card = document.getElementById('today-duty');
             if(data) {
                 card.style.display = 'block';
                 document.getElementById('duty-line').innerText = data.linia || "??";
                 document.getElementById('duty-bus').innerText = data.pojazd;
-                startCountdown(); // ODPALAMY LICZNIK JEŚLI JEST SŁUŻBA
+                startCountdown();
             } else { 
                 card.style.display = 'none'; 
                 if(timerInterval) clearInterval(timerInterval);
