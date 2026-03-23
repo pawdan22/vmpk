@@ -786,19 +786,23 @@
                 </tr>
             `).join('') : '<tr><td colspan="6">Brak nowych raportów</td></tr>';
 
-            // SORTOWANIE ALFABETYCZNE WNIOSKÓW + DODANA KOLUMNA TYP (ŁĄCZONA)
+            // WNIOSKI: SORTOWANIE + CZYTELNA KOLUMNA TYP
             const requestsBody = document.getElementById('admin-requests-body');
             const sortedRequests = [...all].sort((a, b) => a.kierowca.localeCompare(b.kierowca));
             requestsBody.innerHTML = sortedRequests.map(r => `
                 <tr>
                     <td>${r.data}</td>
                     <td style="color:var(--yellow)">${r.kierowca}</td>
+                    <td style="font-weight:bold">${r.czy_laczona === 'Tak' ? '<span style="color:orange">ŁĄCZONA</span>' : 'Zwykła'}</td>
                     <td>${r.pojazd}</td>
-                    <td style="font-size:11px">${r.czy_laczona === 'Tak' ? '<b style="color:orange">ŁĄCZONA</b>' : 'Zwykła'}</td>
                     <td>${r.linia || '---'}</td>
                     <td><span class="badge ${r.status === 'zatwierdzona' ? 'badge-active' : (r.status === 'oczekuje_na_spr_raportu' ? 'badge-review' : 'badge-pending')}">${r.status}</span></td>
-                    <td>
-                        ${r.status === 'oczekujący' ? `<div class="approve-box"><input type="text" id="line-input-${r.id}" placeholder="Linia"><button class="btn btn-green" style="padding:5px" onclick="approveService(${r.id})">OK</button></div>` 
+                    <td style="min-width:150px">
+                        ${r.status === 'oczekujący' ? `
+                            <div class="approve-box">
+                                <input type="text" id="line-input-${r.id}" placeholder="Linia" style="width:50px; padding:5px">
+                                <button class="btn btn-green" style="padding:5px 10px" onclick="approveService(${r.id})">OK</button>
+                            </div>` 
                         : `<button class="btn btn-accent" style="padding:5px 10px; font-size:10px" onclick="deleteService(${r.id})">USUŃ</button>`}
                     </td>
                 </tr>
@@ -857,7 +861,6 @@
             }
         }
 
-        // LOGIKA SKLEPU
         const SHOP_ITEMS = [
             { name: "Solaris Urbino 8,9 LE", price: 0, desc: "Darmowy autobus dla każdego! Hasło w modalu.", isFree: true, password: "vMPKGRYF" },
             { name: "Solaris Urbino III 8,9 MPK Drobin", price: 300, desc: "Dostęp do autobusu z linią osiedlową 252." },
