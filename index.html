@@ -786,12 +786,16 @@
                 </tr>
             `).join('') : '<tr><td colspan="6">Brak nowych raportów</td></tr>';
 
-            // SORTOWANIE ALFABETYCZNE WNIOSKÓW
+            // SORTOWANIE ALFABETYCZNE WNIOSKÓW + DODANA KOLUMNA TYP (ŁĄCZONA)
             const requestsBody = document.getElementById('admin-requests-body');
             const sortedRequests = [...all].sort((a, b) => a.kierowca.localeCompare(b.kierowca));
             requestsBody.innerHTML = sortedRequests.map(r => `
                 <tr>
-                    <td>${r.data}</td><td style="color:var(--yellow)">${r.kierowca}</td><td>${r.pojazd}</td><td>${r.linia || '---'}</td>
+                    <td>${r.data}</td>
+                    <td style="color:var(--yellow)">${r.kierowca}</td>
+                    <td>${r.pojazd}</td>
+                    <td style="font-size:11px">${r.czy_laczona === 'Tak' ? '<b style="color:orange">ŁĄCZONA</b>' : 'Zwykła'}</td>
+                    <td>${r.linia || '---'}</td>
                     <td><span class="badge ${r.status === 'zatwierdzona' ? 'badge-active' : (r.status === 'oczekuje_na_spr_raportu' ? 'badge-review' : 'badge-pending')}">${r.status}</span></td>
                     <td>
                         ${r.status === 'oczekujący' ? `<div class="approve-box"><input type="text" id="line-input-${r.id}" placeholder="Linia"><button class="btn btn-green" style="padding:5px" onclick="approveService(${r.id})">OK</button></div>` 
