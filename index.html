@@ -305,6 +305,24 @@
 
             <div id="view-admin" class="view-section">
                 <h1>Panel Dyspozytora</h1>
+                <div id="admin-km-management" style="background: #161616; padding: 20px; border-radius: 12px; border: 1px solid var(--accent); margin-bottom: 30px;">
+    <h3 style="margin-top:0"><i class="fa-solid fa-coins"></i> Zarządzanie Kilometrami (Kary/Premie)</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
+        <div class="input-group" style="margin:0">
+            <label>Kierowca</label>
+            <select id="adm-km-user-select" style="padding:10px"></select>
+        </div>
+        <div class="input-group" style="margin:0">
+            <label>Ilość KM (minus dla kar)</label>
+            <input type="number" id="adm-km-val" placeholder="np. -10 lub 15">
+        </div>
+        <div class="input-group" style="margin:0">
+            <label>Powód</label>
+            <input type="text" id="adm-km-reason" placeholder="np. Kara za spóźnienie">
+        </div>
+        <button class="btn btn-accent" onclick="adminModifyKm()">Zastosuj</button>
+    </div>
+</div>
                 <div id="admin-rec-control" style="background: #161616; padding: 20px; border-radius: 12px; border: 1px solid var(--yellow); margin-bottom: 30px;">
                     <h3><i class="fa-solid fa-user-plus"></i> Rekrutacja</h3>
                     <div style="display:flex; gap:15px; align-items:center">
@@ -349,7 +367,7 @@
         </main>
     </div>
 
-    <script>
+<script>
         const sb = window.supabase.createClient('https://rgkpsalluqhncepieuht.supabase.co', 'sb_publishable_UVLQNk4RSTuFZsjTJilDeA_M62vfl5Q');
 
         const USERS = [
@@ -377,7 +395,7 @@
 
         let currentUser = null;
         let calendar;
-        let personalCalendar; // Drugi kalendarz dla widoku grafiku
+        let personalCalendar; 
         let selectedDate = "";
         let timerInterval;
         let sessionTimeout;
@@ -393,6 +411,7 @@
             { q: "Czy pasażerowie mogą stać obok kierowcy w trakcie jazdy?", a: ["Tak", "Nie, za linią bezpieczeństwa", "Tylko znajomi kierowcy"], correct: 1 }
         ];
 
+        // REKRUTACJA
         async function checkRecruitmentStatus() {
             const { data } = await sb.from('settings').select('*').eq('key', 'rec_active').maybeSingle();
             if(data && data.value === 'true') {
@@ -464,6 +483,7 @@
             refreshAdminPanel();
         }
 
+        // SYSTEMOWE
         function showAlert(title, msg, type = 'info') {
             const modal = document.getElementById('system-modal');
             const border = document.getElementById('system-modal-border');
@@ -616,14 +636,12 @@
             }
         }
 
-        // LOGIKA GRAFIKU (LISTA I KALENDARZ)
         async function refreshUserSchedule() {
             const { data } = await sb.from('sluzby')
                 .select('*')
                 .eq('kierowca', currentUser.user)
                 .order('data', { ascending: false });
             
-            // Widok Listy
             const body = document.getElementById('user-schedule-body');
             body.innerHTML = data && data.length ? data.map(s => `
                 <tr>
@@ -634,7 +652,6 @@
                 </tr>
             `).join('') : '<tr><td colspan="4" style="text-align:center">Brak przypisanych służb.</td></tr>';
 
-            // Widok Kalendarza (Inicjalizacja)
             const personalEvents = data ? data.map(r => ({
                 title: `Linia: ${r.linia || '?'} (${r.pojazd})`,
                 start: r.data,
@@ -687,7 +704,14 @@
             checkTodayDuty(); switchView('home');
         }
 
-        function fillAdminSelect() { document.getElementById('adm-user-select').innerHTML = USERS.map(u => `<option value="${u.user}">${u.user}</option>`).join(''); }
+        // ADMIN: ZARZĄDZANIE
+        function fillAdminSelect() { 
+            const usersHtml = USERS.map(u => `<option value="${u.user}">${u.user}</option>`).join('');
+            const sel1 = document.getElementById('adm-user-select');
+            const sel2 = document.getElementById('adm-km-user-select');
+            if(sel1) sel1.innerHTML = usersHtml;
+            if(sel2) sel2.innerHTML = usersHtml;
+        }
 
         async function adminAddService() {
             const user = document.getElementById('adm-user-select').value;
@@ -700,6 +724,18 @@
             if(km > 0) await sb.from('stats').insert([{ username: user, kilometers: km }]);
             showAlert('Admin', 'Służba dodana pomyślnie!', 'success');
             refreshAdminPanel(); refreshData();
+        }
+
+        async function adminModifyKm() {
+            const user = document.getElementById('adm-km-user-select').value;
+            const km = parseFloat(document.getElementById('adm-km-val').value);
+            if(isNaN(km)) { showAlert('Błąd', 'Wpisz poprawną liczbę kilometrów!', 'error'); return; }
+            const { error } = await sb.from('stats').insert([{ username: user, kilometers: km }]);
+            if(!error) {
+                showAlert('Sukces', `Zmieniono kilometry dla ${user} o: ${km} km`, 'success');
+                document.getElementById('adm-km-val').value = '';
+                refreshData(); 
+            } else { showAlert('Błąd', 'Błąd bazy danych!', 'error'); }
         }
 
         async function approveService(id) {
@@ -737,6 +773,7 @@
 
             const { data: all } = await sb.from('sluzby').select('*').order('data', { ascending: false });
             if(!all) return;
+
             const reportsBody = document.getElementById('admin-reports-body');
             const toCheck = all.filter(r => r.status === 'oczekuje_na_spr_raportu');
             reportsBody.innerHTML = toCheck.length ? toCheck.map(r => `
@@ -748,8 +785,11 @@
                     <td><button class="btn btn-yellow" style="padding:5px 10px" onclick="finalizeReport(${r.id}, '${r.kierowca}')">ZATWIERDŹ</button></td>
                 </tr>
             `).join('') : '<tr><td colspan="6">Brak nowych raportów</td></tr>';
+
+            // SORTOWANIE ALFABETYCZNE WNIOSKÓW
             const requestsBody = document.getElementById('admin-requests-body');
-            requestsBody.innerHTML = all.map(r => `
+            const sortedRequests = [...all].sort((a, b) => a.kierowca.localeCompare(b.kierowca));
+            requestsBody.innerHTML = sortedRequests.map(r => `
                 <tr>
                     <td>${r.data}</td><td style="color:var(--yellow)">${r.kierowca}</td><td>${r.pojazd}</td><td>${r.linia || '---'}</td>
                     <td><span class="badge ${r.status === 'zatwierdzona' ? 'badge-active' : (r.status === 'oczekuje_na_spr_raportu' ? 'badge-review' : 'badge-pending')}">${r.status}</span></td>
@@ -804,14 +844,12 @@
                 ).join('');
             }
         }
+
         async function deleteRec(id) {
             if(confirm("Czy na pewno chcesz usunąć to podanie?")) {
                 const { error } = await sb.from('rekrutacja').delete().eq('id', id);
-                if (error) {
-                    alert("Błąd podczas usuwania: " + error.message);
-                } else {
-                    refreshAdminPanel();
-                }
+                if (error) { alert("Błąd podczas usuwania: " + error.message); } 
+                else { refreshAdminPanel(); }
             }
         }
 
@@ -827,7 +865,6 @@
             const { data } = await sb.from('stats').select('kilometers').eq('username', currentUser.user);
             const myKm = data ? data.reduce((sum, r) => sum + r.kilometers, 0) : 0;
             document.getElementById('shop-km').innerText = myKm.toFixed(1) + " km";
-
             const { data: garage } = await sb.from('garaz').select('pojazd').eq('username', currentUser.user);
             const owned = garage ? garage.map(g => g.pojazd) : [];
 
@@ -836,7 +873,6 @@
                 let btnText = isOwned ? 'POSIADASZ' : (myKm < item.price ? 'BRAK ŚRODKÓW' : 'KUP TERAZ');
                 let btnClass = isOwned ? 'btn-green' : 'btn-accent';
                 let onclickAction = `buyVehicle('${item.name}', ${item.price})`;
-
                 if(item.isFree) {
                     if(isOwned) {
                         btnText = 'ZOBACZ HASŁO';
@@ -847,7 +883,6 @@
                         btnClass = 'btn-green';
                     }
                 }
-
                 return `
                     <div class="stat-card" style="border: 1px solid ${isOwned ? 'var(--green)' : 'var(--border)'}">
                         <h3>${item.name}</h3>
@@ -867,23 +902,16 @@
         async function buyVehicle(name, price) {
             const item = SHOP_ITEMS.find(i => i.name === name);
             const isFree = item && item.isFree;
-
             if(isFree || confirm(`Czy chcesz kupić ${name} za ${price} km?`)) {
                 if(!isFree) {
                     const { error: statsError } = await sb.from('stats').insert([{ username: currentUser.user, kilometers: -price }]);
                     if(statsError) { showAlert('Błąd', 'Błąd podczas płatności!', 'error'); return; }
                 }
-                
                 await sb.from('garaz').insert([{ username: currentUser.user, pojazd: name }]);
-                
                 if(isFree && item.password) {
                     showAlert('Sukces', `Odebrano pomyślnie! Hasło to: ${item.password}`, 'success');
-                } else {
-                    showAlert('Sklep', `Gratulacje! Zakupiono ${name}`, 'success');
-                }
-                
-                refreshShop();
-                refreshData();
+                } else { showAlert('Sklep', `Gratulacje! Zakupiono ${name}`, 'success'); }
+                refreshShop(); refreshData();
             }
         }
     </script>
