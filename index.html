@@ -350,11 +350,20 @@
                     <tbody id="admin-reports-body"></tbody>
                 </table>
 
-                <h3 style="margin-top:40px;"><i class="fa-solid fa-list-check"></i> Wszystkie wnioski o służbę</h3>
-                <table>
-                    <thead><tr><th>DATA</th><th>KIEROWCA</th><th>POJAZD</th><th>LINIA</th><th>STATUS</th><th>AKCJA</th></tr></thead>
-                    <tbody id="admin-requests-body"></tbody>
-                </table>
+               <h3 style="margin-top:40px;"><i class="fa-solid fa-list-check"></i> Wszystkie wnioski o służbę</h3>
+<table>
+    <thead>
+        <tr>
+            <th>DATA</th>
+            <th>KIEROWCA</th>
+            <th>POJAZD</th>
+            <th>TYP</th> <th>LINIA</th>
+            <th>STATUS</th>
+            <th>AKCJA</th>
+        </tr>
+    </thead>
+    <tbody id="admin-requests-body"></tbody>
+</table>
 
                 <h3 style="margin-top:40px;"><i class="fa-solid fa-user-tie"></i> Nowe podania do firmy</h3>
                 <table>
@@ -786,27 +795,37 @@
                 </tr>
             `).join('') : '<tr><td colspan="6">Brak nowych raportów</td></tr>';
 
-            // WNIOSKI: SORTOWANIE + CZYTELNA KOLUMNA TYP
-            const requestsBody = document.getElementById('admin-requests-body');
-            const sortedRequests = [...all].sort((a, b) => a.kierowca.localeCompare(b.kierowca));
-            requestsBody.innerHTML = sortedRequests.map(r => `
-                <tr>
-                    <td>${r.data}</td>
-                    <td style="color:var(--yellow)">${r.kierowca}</td>
-                    <td style="font-weight:bold">${r.czy_laczona === 'Tak' ? '<span style="color:orange">ŁĄCZONA</span>' : 'Zwykła'}</td>
-                    <td>${r.pojazd}</td>
-                    <td>${r.linia || '---'}</td>
-                    <td><span class="badge ${r.status === 'zatwierdzona' ? 'badge-active' : (r.status === 'oczekuje_na_spr_raportu' ? 'badge-review' : 'badge-pending')}">${r.status}</span></td>
-                    <td style="min-width:150px">
-                        ${r.status === 'oczekujący' ? `
-                            <div class="approve-box">
-                                <input type="text" id="line-input-${r.id}" placeholder="Linia" style="width:50px; padding:5px">
-                                <button class="btn btn-green" style="padding:5px 10px" onclick="approveService(${r.id})">OK</button>
-                            </div>` 
-                        : `<button class="btn btn-accent" style="padding:5px 10px; font-size:10px" onclick="deleteService(${r.id})">USUŃ</button>`}
-                    </td>
-                </tr>
-            `).join('');
+           // W sekcji admina wewnątrz refreshAdminPanel() zamień fragment generujący requestsBody:
+
+const requestsBody = document.getElementById('admin-requests-body');
+const sortedRequests = [...all].sort((a, b) => a.kierowca.localeCompare(b.kierowca));
+
+requestsBody.innerHTML = sortedRequests.map(r => `
+    <tr>
+        <td>${r.data}</td>
+        <td style="color:var(--yellow)">${r.kierowca}</td>
+        <td>${r.pojazd}</td>
+        <td>
+            ${r.czy_laczona === 'Tak' 
+                ? '<b style="color:orange; font-size:11px;">ŁĄCZONA</b>' 
+                : '<span style="color:var(--text-dim); font-size:11px;">Zwykła</span>'}
+        </td>
+        <td>${r.linia || '---'}</td>
+        <td>
+            <span class="badge ${r.status === 'zatwierdzona' ? 'badge-active' : (r.status === 'oczekuje_na_spr_raportu' ? 'badge-review' : 'badge-pending')}">
+                ${r.status}
+            </span>
+        </td>
+        <td>
+            ${r.status === 'oczekujący' ? 
+                `<div class="approve-box">
+                    <input type="text" id="line-input-${r.id}" placeholder="Linia" style="width:50px; padding:5px;">
+                    <button class="btn btn-green" style="padding:5px" onclick="approveService(${r.id})">OK</button>
+                </div>` 
+                : `<button class="btn btn-accent" style="padding:5px 10px; font-size:10px" onclick="deleteService(${r.id})">USUŃ</button>`}
+        </td>
+    </tr>
+`).join('');
 
             const { data: recs } = await sb.from('rekrutacja').select('*').order('id', { ascending: false });
             const recBody = document.getElementById('admin-recruitment-body');
