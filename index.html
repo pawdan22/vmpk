@@ -36,6 +36,8 @@
         .calendar-container { background: var(--card-bg); width: 90%; max-width: 900px; padding: 25px; border-radius: 15px; position: relative; }
         .fc { color: #fff; background: #161616; padding: 10px; border-radius: 8px; border: 1px solid var(--border); max-height: 70vh; }
         .fc-event { border: none !important; cursor: help; padding: 2px; }
+        /* Style dla kalendarza w zakładce Grafik */
+        #personal-calendar { margin-top: 20px; background: #161616; border-radius: 8px; padding: 10px; }
 
         #login-page { display: flex; align-items: center; justify-content: center; height: 100vh; background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.85)), url('https://i.imgur.com/jLWmK8I.jpeg'); background-size: cover; background-position: center; }
         .login-box { background: var(--card-bg); padding: 40px; border-radius: 15px; border: 1px solid var(--border); width: 320px; text-align: center; }
@@ -96,6 +98,11 @@
         
         .approve-box { display: flex; gap: 5px; background: #222; padding: 5px; border-radius: 6px; }
         .approve-box input { background: #000; border: 1px solid #444; color: #fff; width: 60px; padding: 5px; border-radius: 4px; font-size: 12px; }
+
+        /* Przełącznik widoku */
+        .view-switcher { display: flex; gap: 10px; margin-bottom: 20px; }
+        .view-switcher button { background: #222; border: 1px solid var(--border); color: var(--text-dim); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 13px; }
+        .view-switcher button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
     </style>
 </head>
 <body onclick="resetSessionTimer()">
@@ -239,14 +246,24 @@
 
             <div id="view-schedule" class="view-section">
                 <h1>Twoje Służby</h1>
-                <p style="color:var(--text-dim); margin-bottom:30px;">Tutaj znajdziesz wszystkie swoje zatwierdzone służby.</p>
-                <div style="background:var(--card-bg); padding:20px; border-radius:12px; border:1px solid var(--border)">
+                <p style="color:var(--text-dim); margin-bottom:20px;">Przeglądaj swój grafik w formie listy lub kalendarza.</p>
+                
+                <div class="view-switcher">
+                    <button id="btn-list-view" class="active" onclick="toggleScheduleView('list')"><i class="fa-solid fa-list"></i> Lista</button>
+                    <button id="btn-cal-view" onclick="toggleScheduleView('calendar')"><i class="fa-solid fa-calendar"></i> Kalendarz</button>
+                </div>
+
+                <div id="schedule-list-view" style="background:var(--card-bg); padding:20px; border-radius:12px; border:1px solid var(--border)">
                     <table>
                         <thead>
                             <tr><th>DATA</th><th>LINIA</th><th>POJAZD</th><th>STATUS</th></tr>
                         </thead>
                         <tbody id="user-schedule-body"></tbody>
                     </table>
+                </div>
+
+                <div id="schedule-calendar-view" style="display:none;">
+                    <div id="personal-calendar"></div>
                 </div>
             </div>
 
@@ -348,6 +365,7 @@
 
         let currentUser = null;
         let calendar;
+        let personalCalendar; // Drugi kalendarz dla widoku grafiku
         let selectedDate = "";
         let timerInterval;
         let sessionTimeout;
@@ -525,7 +543,7 @@
             if(view === 'admin') refreshAdminPanel();
             if(view === 'report') fillReportSelect();
             if(view === 'shop') refreshShop();
-            if(view === 'schedule') refreshUserSchedule();
+            if(view === 'schedule') { refreshUserSchedule(); toggleScheduleView('list'); }
             if(view === 'home') { checkTodayDuty(); refreshData(); }
         }
 
@@ -573,22 +591,59 @@
             showAlert('Sukces', 'Twój wniosek o służbę został wysłany!', 'success');
         }
 
+        // LOGIKA GRAFIKU (LISTA I KALENDARZ)
         async function refreshUserSchedule() {
             const { data } = await sb.from('sluzby')
                 .select('*')
                 .eq('kierowca', currentUser.user)
-                .in('status', ['zatwierdzona', 'oczekuje_na_spr_raportu', 'zakończona'])
                 .order('data', { ascending: false });
             
+            // Widok Listy
             const body = document.getElementById('user-schedule-body');
             body.innerHTML = data && data.length ? data.map(s => `
                 <tr>
                     <td>${s.data}</td>
                     <td style="color:var(--yellow)">${s.linia || '---'}</td>
                     <td>${s.pojazd}</td>
-                    <td><span class="badge ${s.status === 'zatwierdzona' ? 'badge-active' : (s.status === 'zakończona' ? 'badge-active' : 'badge-review')}">${s.status}</span></td>
+                    <td><span class="badge ${s.status === 'zatwierdzona' ? 'badge-active' : (s.status === 'zakończona' ? 'badge-active' : (s.status === 'oczekujący' ? 'badge-pending' : 'badge-review'))}">${s.status}</span></td>
                 </tr>
             `).join('') : '<tr><td colspan="4" style="text-align:center">Brak przypisanych służb.</td></tr>';
+
+            // Widok Kalendarza (Inicjalizacja)
+            const personalEvents = data ? data.map(r => ({
+                title: `Linia: ${r.linia || '?'} (${r.pojazd})`,
+                start: r.data,
+                color: r.status === 'zatwierdzona' ? '#2ecc71' : (r.status === 'zakończona' ? '#555' : '#f4c430')
+            })) : [];
+
+            if(personalCalendar) personalCalendar.destroy();
+            personalCalendar = new FullCalendar.Calendar(document.getElementById('personal-calendar'), {
+                initialView: 'dayGridMonth', 
+                locale: 'pl', 
+                firstDay: 1, 
+                events: personalEvents,
+                height: 'auto'
+            });
+        }
+
+        function toggleScheduleView(view) {
+            const listDiv = document.getElementById('schedule-list-view');
+            const calDiv = document.getElementById('schedule-calendar-view');
+            const btnList = document.getElementById('btn-list-view');
+            const btnCal = document.getElementById('btn-cal-view');
+
+            if(view === 'list') {
+                listDiv.style.display = 'block';
+                calDiv.style.display = 'none';
+                btnList.classList.add('active');
+                btnCal.classList.remove('active');
+            } else {
+                listDiv.style.display = 'none';
+                calDiv.style.display = 'block';
+                btnList.classList.remove('active');
+                btnCal.classList.add('active');
+                setTimeout(() => personalCalendar.render(), 100);
+            }
         }
 
         async function fillReportSelect() {
