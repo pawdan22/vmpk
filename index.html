@@ -131,6 +131,13 @@
                 <label>Preferowany autobus</label>
                 <input type="text" id="pref-input" placeholder="np. Solaris Urbino 12">
             </div>
+            <div class="input-group">
+                <label>Czy chcesz linie łączoną/łamaną?</label>
+                <select id="laczona-input">
+                    <option value="nie">Nie</option>
+                    <option value="tak">Tak</option>
+                </select>
+            </div>
             <div style="display:flex; gap:10px; justify-content: center;">
                 <button id="submit-btn" class="btn btn-accent" onclick="submitService()">Wyślij wniosek</button>
                 <button class="btn" style="background:#333" onclick="closeAll()">Cofnij</button>
@@ -585,10 +592,23 @@
 
         async function submitService() {
             const pref = document.getElementById('pref-input').value;
-            await sb.from('sluzby').insert([{ kierowca: currentUser.user, data: selectedDate, pojazd: pref || "Dowolny", status: 'oczekujący' }]);
-            closeAll();
-            initCalendar();
-            showAlert('Sukces', 'Twój wniosek o służbę został wysłany!', 'success');
+            const czyLaczona = document.getElementById('laczona-input').value;
+
+            const { error } = await sb.from('sluzby').insert([{ 
+                kierowca: currentUser.user, 
+                data: selectedDate, 
+                pojazd: pref || "Dowolny", 
+                status: 'oczekujący',
+                czy_laczona: czyLaczona 
+            }]);
+
+            if(error) {
+                showAlert('Błąd', 'Nie udało się wysłać wniosku: ' + error.message, 'error');
+            } else {
+                closeAll();
+                initCalendar();
+                showAlert('Sukces', 'Twój wniosek o służbę został wysłany!', 'success');
+            }
         }
 
         // LOGIKA GRAFIKU (LISTA I KALENDARZ)
