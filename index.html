@@ -219,24 +219,29 @@
             <div id="view-home" class="view-section active">
                 <h1>Panel Kierowcy vMPK Drobin</h1>
                 
-                <div id="today-duty" class="today-duty-card">
-                    <h3 style="margin:0; color:var(--yellow); font-size:12px; text-transform:uppercase; letter-spacing: 1px;">Twoja przydzielona służba:</h3>
-                    <div style="display: flex; align-items: center; gap: 20px; margin-top: 15px;">
-                        <div style="background: var(--accent); padding: 10px 20px; border-radius: 8px; text-align: center;">
-                            <span style="display: block; font-size: 10px; text-transform: uppercase;">Linia</span>
-                            <b id="duty-line" style="font-size: 24px;">--</b>
-                        </div>
-                        <div>
-                            <p id="duty-bus" style="margin:0; font-size:18px; font-weight:bold;"></p>
-                            <span class="badge badge-active" style="margin-top:5px; display:inline-block;">Zatwierdzona</span>
-                        </div>
-                    </div>
+                <div id="today-duty" class="today-duty-card" style="display: none;">
+    <h3 style="margin:0; color:var(--yellow); font-size:12px; text-transform:uppercase; letter-spacing: 1px;">
+        <i class="fa-solid fa-bus"></i> Twoja przydzielona służba:
+    </h3>
+    <div style="display: flex; align-items: center; gap: 20px; margin-top: 15px;">
+        <div style="background: var(--accent); padding: 10px 20px; border-radius: 8px; text-align: center; min-width: 80px;">
+            <span style="display: block; font-size: 10px; text-transform: uppercase; opacity: 0.8;">Linia</span>
+            <b id="duty-line" style="font-size: 24px;">--</b>
+        </div>
+        <div>
+            <span style="font-size: 10px; text-transform: uppercase; color: var(--text-dim); display: block;">Pojazd</span>
+            <b id="duty-bus" style="margin:0; font-size:18px; font-weight:bold;">--</b>
+            <div style="margin-top: 5px;">
+                <span class="badge badge-active">Zatwierdzona</span>
+            </div>
+        </div>
+    </div>
 
-                    <div class="timer-box">
-                        <span class="timer-label">Pozostały czas na wykonanie służby:</span>
-                        <div id="duty-timer" class="timer-value">00:00:00</div>
-                    </div>
-                </div>
+    <div class="timer-box">
+        <span class="timer-label">Pozostały czas na wykonanie służby:</span>
+        <div id="duty-timer" class="timer-value">00:00:00</div>
+    </div>
+</div>
 
                 <div class="stats-grid">
                     <div class="stat-card"><h3>Twoje Kilometry</h3><p id="user-km">0.0 km</p></div>
@@ -843,15 +848,40 @@ requestsBody.innerHTML = sortedRequests.map(r => `
         }
 
         async function checkTodayDuty() {
-            const dzis = new Date().toISOString().split('T')[0];
-            const { data } = await sb.from('sluzby').select('*').eq('kierowca', currentUser.user).eq('data', dzis).eq('status', 'zatwierdzona').maybeSingle();
+            // 1. Pobieramy dzisiejszą datę w formacie YYYY-MM-DD
+            const dzis = new Date().toLocaleDateString('sv-SE'); 
+            
+            // 2. Szukamy zatwierdzonej służby dla Ciebie na dziś
+            const { data, error } = await sb.from('sluzby')
+                .select('*')
+                .eq('kierowca', currentUser.user)
+                .eq('data', dzis)
+                .eq('status', 'zatwierdzona')
+                .maybeSingle();
+
             const card = document.getElementById('today-duty');
-            if(data) {
+            if (data) {
                 card.style.display = 'block';
-                document.getElementById('duty-line').innerText = data.linia || "??";
-                document.getElementById('duty-bus').innerText = data.pojazd;
+
+                // 3. Logika wyświetlania linii (obsługa łączonej i NULLa)
+                let displayLine = "??";
+                if (data.linia) {
+                    displayLine = data.linia;
+                } else if (data.czy_laczona === 'tak') {
+                    displayLine = "ŁĄCZONA";
+                }
+
+                // 4. Wstawiamy dane do Twoich istniejących ID
+                document.getElementById('duty-line').innerText = displayLine;
+                document.getElementById('duty-bus').innerText = data.pojazd || "Dowolny";
+                
+                // 5. Odpalamy licznik
                 startCountdown();
-            } else { card.style.display = 'none'; if(timerInterval) clearInterval(timerInterval); }
+            } else {
+                // Jeśli nie ma służby, chowamy box i czyścimy interwał
+                card.style.display = 'none';
+                if (timerInterval) clearInterval(timerInterval);
+            }
         }
 
         async function refreshData() {
