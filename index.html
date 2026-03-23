@@ -191,6 +191,7 @@
             <nav>
                 <ul>
                     <li onclick="switchView('home')" id="nav-home" class="active"><i class="fa-solid fa-gauge-high"></i> Strona Główna</li>
+                    <li onclick="switchView('schedule')" id="nav-schedule"><i class="fa-solid fa-calendar-days"></i> Twój Grafik</li>
                     <li onclick="switchView('report')" id="nav-report"><i class="fa-solid fa-file-export"></i> Wyślij Raport</li>
                     <li onclick="switchView('shop')" id="nav-shop"><i class="fa-solid fa-cart-shopping"></i> Sklep</li>
                     <li onclick="switchView('admin')" id="nav-admin" class="admin-only"><i class="fa-solid fa-user-shield"></i> Panel Dyspozytora</li>
@@ -234,6 +235,19 @@
                     <thead><tr><th>KIEROWCA</th><th>KILOMETRY</th></tr></thead>
                     <tbody id="ranking-body"></tbody>
                 </table>
+            </div>
+
+            <div id="view-schedule" class="view-section">
+                <h1>Twoje Służby</h1>
+                <p style="color:var(--text-dim); margin-bottom:30px;">Tutaj znajdziesz wszystkie swoje zatwierdzone służby.</p>
+                <div style="background:var(--card-bg); padding:20px; border-radius:12px; border:1px solid var(--border)">
+                    <table>
+                        <thead>
+                            <tr><th>DATA</th><th>LINIA</th><th>POJAZD</th><th>STATUS</th></tr>
+                        </thead>
+                        <tbody id="user-schedule-body"></tbody>
+                    </table>
+                </div>
             </div>
 
             <div id="view-report" class="view-section">
@@ -327,14 +341,8 @@
             { user: ".uncledane", pass: "uRgaHrPATh", isAdmin: false },
             { user: "chief2275kk", pass: "VDqMWCYvOy", isAdmin: false },
             { user: "krokiettttttt123_68137", pass: "EknxItQKuM", isAdmin: false },
-            { user: "gwandura", pass: "pcfUUshwBD", isAdmin: false },
-            { user: "itzzjustpablo", pass: "VdtuJRtwFT", isAdmin: false },
-            { user: "koles_pcd", pass: "KQdAohVIDh", isAdmin: false },
-            { user: "lily_lovebraids1", pass: "AHLMOWHveD", isAdmin: false },
-            { user: "polaris_73931", pass: "VgroDecQAd", isAdmin: false },
             { user: "odey671", pass: "hBbCavsbcv", isAdmin: true },
             { user: "adisdcn", pass: "vOxgDdJqvM", isAdmin: false },
-            { user: "sooobtre_123", pass: "avYCkEXdUZ", isAdmin: false },
             { user: "paniwiktoria_53592", pass: "FEcKCKDHAq", isAdmin: false }
         ];
 
@@ -517,6 +525,7 @@
             if(view === 'admin') refreshAdminPanel();
             if(view === 'report') fillReportSelect();
             if(view === 'shop') refreshShop();
+            if(view === 'schedule') refreshUserSchedule();
             if(view === 'home') { checkTodayDuty(); refreshData(); }
         }
 
@@ -562,6 +571,24 @@
             closeAll();
             initCalendar();
             showAlert('Sukces', 'Twój wniosek o służbę został wysłany!', 'success');
+        }
+
+        async function refreshUserSchedule() {
+            const { data } = await sb.from('sluzby')
+                .select('*')
+                .eq('kierowca', currentUser.user)
+                .in('status', ['zatwierdzona', 'oczekuje_na_spr_raportu', 'zakończona'])
+                .order('data', { ascending: false });
+            
+            const body = document.getElementById('user-schedule-body');
+            body.innerHTML = data && data.length ? data.map(s => `
+                <tr>
+                    <td>${s.data}</td>
+                    <td style="color:var(--yellow)">${s.linia || '---'}</td>
+                    <td>${s.pojazd}</td>
+                    <td><span class="badge ${s.status === 'zatwierdzona' ? 'badge-active' : (s.status === 'zakończona' ? 'badge-active' : 'badge-review')}">${s.status}</span></td>
+                </tr>
+            `).join('') : '<tr><td colspan="4" style="text-align:center">Brak przypisanych służb.</td></tr>';
         }
 
         async function fillReportSelect() {
@@ -736,7 +763,7 @@
                         btnClass = 'btn-yellow';
                         onclickAction = `showAlert('Hasło', 'Hasło do autobusu: ${item.password}', 'info')`;
                     } else {
-                        btnText = 'GRATIS';
+                        btnText = 'ODBIERZ ZA DARMO';
                         btnClass = 'btn-green';
                     }
                 }
