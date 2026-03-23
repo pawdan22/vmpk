@@ -322,22 +322,18 @@
                         <div class="input-group" style="margin:0"><label>Autobus</label><input type="text" id="adm-bus" placeholder="np. Solaris"></div>
                         <div class="input-group" style="margin:0"><label>Linia</label><input type="text" id="adm-line" placeholder="L-1"></div>
                         <div class="input-group" style="margin:0"><label>KM</label><input type="number" id="adm-km" placeholder="0.0"></div>
-                        <button class="btn btn-yellow" onclick="adminAddService()">Dodaj</button>
-                    </div>
+                        <button class="btn btn-yellow" onclick="adminAddService()">Dodaj</button> </div>
                 </div>
-
                 <h3><i class="fa-solid fa-check-double"></i> Raporty do sprawdzenia</h3>
                 <table>
                     <thead><tr><th>KIEROWCA</th><th>LINIA</th><th>KM</th><th>DOWÓD</th><th>ZATWIERDŹ KM</th><th>AKCJA</th></tr></thead>
                     <tbody id="admin-reports-body"></tbody>
                 </table>
-
                 <h3 style="margin-top:40px;"><i class="fa-solid fa-list-check"></i> Wszystkie wnioski o służbę</h3>
                 <table>
                     <thead><tr><th>DATA</th><th>KIEROWCA</th><th>POJAZD</th><th>LINIA</th><th>STATUS</th><th>AKCJA</th></tr></thead>
                     <tbody id="admin-requests-body"></tbody>
                 </table>
-
                 <h3 style="margin-top:40px;"><i class="fa-solid fa-user-tie"></i> Nowe podania do firmy</h3>
                 <table>
                     <thead>
@@ -348,10 +344,8 @@
             </div>
         </main>
     </div>
-
     <script>
         const sb = window.supabase.createClient('https://rgkpsalluqhncepieuht.supabase.co', 'sb_publishable_UVLQNk4RSTuFZsjTJilDeA_M62vfl5Q');
-
         const USERS = [
             { user: "pawdan", pass: "admin123", isAdmin: true },
             { user: "oloszz", pass: "drobin2026", isAdmin: true },
@@ -372,174 +366,74 @@
 
         let currentUser = null;
         let calendar;
-        let personalCalendar; // Drugi kalendarz dla widoku grafiku
+        let personalCalendar; 
         let selectedDate = "";
         let timerInterval;
         let sessionTimeout;
-
         let recTimer;
         let currentQuizIndex = 0;
         let quizAnswers = [];
+
         const quizQuestions = [
             { q: "Jaka jest prędkość dopuszczalna autobusu w terenie zabudowanym?", a: ["40 km/h", "50 km/h", "60 km/h"], correct: 1 },
             { q: "Czy kierowca autobusu może palić podczas jazdy?", a: ["Tak", "Tylko e-papierosy", "Nie"], correct: 2 },
-            { q: "Co oznacza zielona strzałka przy czerwonym świetle?", a: ["Można jechać bez zatrzymania", "Należy się zatrzymać i ustąpić pierwszeństwa", "Można jechać tylko prosto"], correct: 1 },
-            { q: "Jaki odstęp od pojazdu poprzedzającego należy zachować w tunelu (poza zabudowanym)?", a: ["20m", "50m", "80m"], correct: 1 },
-            { q: "Czy pasażerowie mogą stać obok kierowcy w trakcie jazdy?", a: ["Tak", "Nie, za linią bezpieczeństwa", "Tylko znajomi kierowcy"], correct: 1 }
+            { q: "Co oznacza zielona strzałka przy czerwonym świetle?", a: ["Można jechać bez zatrzymania", "Należy się zatrzymać przed sygnalizatorem", "Pierwszeństwo przed pieszymi"], correct: 1 },
+            { q: "Jaki jest dopuszczalny wymiar czasu pracy kierowcy bez przerwy?", a: ["4.5 godziny", "5 godzin", "6 godzin"], correct: 0 },
+            { q: "Co zrobisz, gdy pasażer nie ma biletu?", a: ["Wyrzucisz go z autobusu", "Poprosisz o zakup lub opuszczenie pojazdu", "Jedziesz dalej"], correct: 1 }
         ];
 
-        async function checkRecruitmentStatus() {
-            const { data } = await sb.from('settings').select('*').eq('key', 'rec_active').maybeSingle();
-            if(data && data.value === 'true') {
+        const SHOP_ITEMS = [
+            { name: "Licencja na Przeguby", price: 50.0, desc: "Pozwala prowadzić autobusy przegubowe." },
+            { name: "Rola VIP na Discord", price: 100.0, desc: "Specjalny kolor nicku i dostęp do kanału." },
+            { name: "Własny Numer Boczny", price: 25.0, desc: "Możesz wybrać swój unikalny numer." },
+            { name: "Zniżka na Paliwo (RP)", price: 15.0, desc: "Dodatek do odgrywania roli." },
+            { name: "Wniosek o urlop (3 dni)", price: 10.0, desc: "Możliwość wzięcia wolnego poza limitem." },
+            { name: "Bonusowe 5km do rankingu", price: 40.0, desc: "Jednorazowe doładowanie statystyk." },
+            { name: "Dostęp do Mapy Testowej", price: 75.0, desc: "Dostęp do mapy deweloperskiej." },
+            { name: "Pakiet Gadżetów Kierowcy", price: 20.0, desc: "Akcesoria do kabiny w grze." }
+        ];
+
+        async function handleLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            const user = USERS.find(x => x.user === u && x.pass === p);
+
+            if(user) {
+                currentUser = user;
                 document.getElementById('login-page').style.display = 'none';
-                document.getElementById('recruitment-page').style.display = 'flex';
+                document.getElementById('dashboard').style.display = 'grid';
+                document.getElementById('display-user').innerText = user.user;
+                if(user.isAdmin) {
+                    const adminElems = document.querySelectorAll('.admin-only');
+                    adminElems.forEach(el => el.style.display = 'flex');
+                    loadAdminData();
+                }
+                initCalendars();
+                refreshData();
+                refreshShop();
+                checkTodayDuty();
+                resetSessionTimer();
             } else {
-                showAlert('Rekrutacja', 'Obecnie rekrutacja jest ZAMKNIĘTA.', 'info');
+                showAlert('Błąd', 'Nieprawidłowy login lub hasło!', 'error');
             }
-        }
-
-        function nextRecruitStep(n) {
-            document.querySelectorAll('.recruit-step').forEach(s => s.classList.remove('active'));
-            document.getElementById('recruit-step-' + n).classList.add('active');
-        }
-
-        function startQuiz() {
-            nextRecruitStep(4);
-            showQuizQuestion();
-        }
-
-        function showQuizQuestion() {
-            if(currentQuizIndex >= quizQuestions.length) {
-                finishRecruitment();
-                return;
-            }
-            const q = quizQuestions[currentQuizIndex];
-            const cont = document.getElementById('quiz-container');
-            cont.innerHTML = `<p style="margin-bottom:15px; font-weight:bold">${currentQuizIndex+1}. ${q.q}</p>
-                ${q.a.map((opt, i) => `<div class="quiz-option" onclick="handleQuizAnswer(${i})">${opt}</div>`).join('')}`;
-            
-            let time = 30;
-            document.getElementById('recruit-timer').innerText = time + 's';
-            clearInterval(recTimer);
-            recTimer = setInterval(() => {
-                time--;
-                document.getElementById('recruit-timer').innerText = time + 's';
-                if(time <= 0) handleQuizAnswer(-1);
-            }, 1000);
-        }
-
-        function handleQuizAnswer(idx) {
-            clearInterval(recTimer);
-            quizAnswers.push(idx);
-            currentQuizIndex++;
-            showQuizQuestion();
-        }
-
-        async function finishRecruitment() {
-            const payload = {
-                nick: document.getElementById('rec-nick').value,
-                birth: document.getElementById('rec-birth').value,
-                email: document.getElementById('rec-email').value,
-                q_sobie: [
-                    document.getElementById('rec-q1').value,
-                    document.getElementById('rec-q2').value,
-                    document.getElementById('rec-q3').value,
-                    document.getElementById('rec-q4').value,
-                    document.getElementById('rec-q5').value
-                ],
-                quiz: quizAnswers
-            };
-            await sb.from('rekrutacja').insert([payload]);
-            showAlert('Sukces', 'Zgłoszenie wysłane! Czekaj na info.', 'success');
-            setTimeout(() => location.reload(), 2500);
-        }
-
-        async function setRecStatus(val) {
-            await sb.from('settings').upsert({ key: 'rec_active', value: val.toString() });
-            refreshAdminPanel();
         }
 
         function showAlert(title, msg, type = 'info') {
             const modal = document.getElementById('system-modal');
             const border = document.getElementById('system-modal-border');
             const icon = document.getElementById('system-modal-icon');
-            const btn = document.getElementById('system-modal-btn');
+            
+            border.style.borderTopColor = type === 'error' ? '#e74c3c' : (type === 'success' ? '#2ecc71' : '#a31d23');
+            icon.style.color = type === 'error' ? '#e74c3c' : (type === 'success' ? '#2ecc71' : '#a31d23');
+            icon.className = type === 'error' ? 'fa-solid fa-circle-xmark' : 'fa-solid fa-circle-info';
             
             document.getElementById('system-modal-title').innerText = title;
             document.getElementById('system-modal-msg').innerText = msg;
-
-            if(type === 'success') {
-                border.style.borderTopColor = 'var(--green)';
-                icon.style.color = 'var(--green)';
-                icon.className = 'fa-solid fa-circle-check';
-                btn.className = 'btn btn-green';
-            } else if(type === 'error') {
-                border.style.borderTopColor = 'var(--accent)';
-                icon.style.color = 'var(--accent)';
-                icon.className = 'fa-solid fa-circle-xmark';
-                btn.className = 'btn btn-accent';
-            } else {
-                border.style.borderTopColor = 'var(--yellow)';
-                icon.style.color = 'var(--yellow)';
-                icon.className = 'fa-solid fa-circle-info';
-                btn.className = 'btn btn-yellow';
-            }
             modal.style.display = 'flex';
         }
 
-        function closeAll() { 
-            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); 
-        }
-
-        window.onload = function() {
-            const savedUser = localStorage.getItem('vmpk_user');
-            const sessionTime = localStorage.getItem('vmpk_session_start');
-            if (savedUser && sessionTime) {
-                const now = new Date().getTime();
-                if (now - sessionTime < 30 * 60 * 1000) {
-                    currentUser = JSON.parse(savedUser);
-                    showDashboard();
-                } else { handleLogout(); }
-            }
-        };
-
-        function resetSessionTimer() {
-            if (currentUser) {
-                localStorage.setItem('vmpk_session_start', new Date().getTime());
-                clearTimeout(sessionTimeout);
-                sessionTimeout = setTimeout(handleLogout, 30 * 60 * 1000);
-            }
-        }
-
-        function handleLogin() {
-            const u = document.getElementById('username').value;
-            const p = document.getElementById('password').value;
-            const foundUser = USERS.find(item => item.user === u && item.pass === p);
-            if(foundUser) {
-                currentUser = foundUser;
-                localStorage.setItem('vmpk_user', JSON.stringify(currentUser));
-                localStorage.setItem('vmpk_session_start', new Date().getTime());
-                showDashboard();
-            } else { showAlert('Błąd', 'Nieprawidłowy login lub hasło!', 'error'); }
-        }
-
-        function handleLogout() {
-            localStorage.removeItem('vmpk_user');
-            localStorage.removeItem('vmpk_session_start');
-            location.reload();
-        }
-
-        function showDashboard() {
-            document.getElementById('login-page').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'grid';
-            document.getElementById('display-user').innerText = currentUser.user;
-            if(currentUser.isAdmin) {
-                document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
-                fillAdminSelect();
-            }
-            initCalendar(); refreshData(); checkTodayDuty();
-            if(currentUser.isAdmin) refreshAdminPanel();
-            resetSessionTimer();
+        function closeAll() {
+            document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
         }
 
         function switchView(view) {
@@ -547,239 +441,95 @@
             document.querySelectorAll('nav li').forEach(l => l.classList.remove('active'));
             document.getElementById('view-' + view).classList.add('active');
             document.getElementById('nav-' + view).classList.add('active');
-            if(view === 'admin') refreshAdminPanel();
-            if(view === 'report') fillReportSelect();
-            if(view === 'shop') refreshShop();
-            if(view === 'schedule') { refreshUserSchedule(); toggleScheduleView('list'); }
-            if(view === 'home') { checkTodayDuty(); refreshData(); }
-        }
-
-        function startCountdown() {
-            if(timerInterval) clearInterval(timerInterval);
-            function updateTimer() {
-                const now = new Date();
-                const endOfDay = new Date(); endOfDay.setHours(23, 59, 59, 999);
-                const diff = endOfDay - now;
-                if (diff <= 0) { document.getElementById('duty-timer').innerText = "CZAS MINĄŁ!"; clearInterval(timerInterval); return; }
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-                document.getElementById('duty-timer').innerText = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            if(view === 'schedule') {
+                setTimeout(() => personalCalendar.render(), 100);
+                loadUserSchedule();
             }
-            updateTimer(); timerInterval = setInterval(updateTimer, 1000);
+            if(view === 'report') loadReportOptions();
         }
 
-        async function initCalendar() {
-            const { data } = await sb.from('sluzby').select('*');
-            const events = data ? data.map(r => ({
-                title: `${r.kierowca} [${r.linia || '?'}]`,
-                start: r.data,
-                color: r.status === 'zatwierdzona' ? '#2ecc71' : (r.status === 'oczekuje_na_spr_raportu' ? '#f4c430' : '#a31d23')
-            })) : [];
-            if(calendar) calendar.destroy();
-            calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-                initialView: 'dayGridMonth', locale: 'pl', firstDay: 1, events: events,
-                dateClick: function(info) {
-                    selectedDate = info.dateStr;
-                    document.getElementById('date-label').innerText = "Dzień: " + selectedDate;
-                    document.getElementById('pref-modal').style.display = 'flex';
-                }
-            });
-            calendar.render();
-        }
-
-        function openCalendar() { document.getElementById('calendar-modal').style.display = 'flex'; setTimeout(() => calendar.render(), 100); }
-
-        async function submitService() {
-            const pref = document.getElementById('pref-input').value;
-            const czyLaczona = document.getElementById('laczona-input').value;
-
-            const { error } = await sb.from('sluzby').insert([{ 
-                kierowca: currentUser.user, 
-                data: selectedDate, 
-                pojazd: pref || "Dowolny", 
-                status: 'oczekujący',
-                czy_laczona: czyLaczona 
-            }]);
-
-            if(error) {
-                showAlert('Błąd', 'Nie udało się wysłać wniosku: ' + error.message, 'error');
-            } else {
-                closeAll();
-                initCalendar();
-                showAlert('Sukces', 'Twój wniosek o służbę został wysłany!', 'success');
-            }
-        }
-
-        // LOGIKA GRAFIKU (LISTA I KALENDARZ)
-        async function refreshUserSchedule() {
-            const { data } = await sb.from('sluzby')
-                .select('*')
-                .eq('kierowca', currentUser.user)
-                .order('data', { ascending: false });
-            
-            // Widok Listy
-            const body = document.getElementById('user-schedule-body');
-            body.innerHTML = data && data.length ? data.map(s => `
-                <tr>
-                    <td>${s.data}</td>
-                    <td style="color:var(--yellow)">${s.linia || '---'}</td>
-                    <td>${s.pojazd}</td>
-                    <td><span class="badge ${s.status === 'zatwierdzona' ? 'badge-active' : (s.status === 'zakończona' ? 'badge-active' : (s.status === 'oczekujący' ? 'badge-pending' : 'badge-review'))}">${s.status}</span></td>
-                </tr>
-            `).join('') : '<tr><td colspan="4" style="text-align:center">Brak przypisanych służb.</td></tr>';
-
-            // Widok Kalendarza (Inicjalizacja)
-            const personalEvents = data ? data.map(r => ({
-                title: `Linia: ${r.linia || '?'} (${r.pojazd})`,
-                start: r.data,
-                color: r.status === 'zatwierdzona' ? '#2ecc71' : (r.status === 'zakończona' ? '#555' : '#f4c430')
-            })) : [];
-
-            if(personalCalendar) personalCalendar.destroy();
-            personalCalendar = new FullCalendar.Calendar(document.getElementById('personal-calendar'), {
-                initialView: 'dayGridMonth', 
-                locale: 'pl', 
-                firstDay: 1, 
-                events: personalEvents,
-                height: 'auto'
-            });
-        }
-
-        function toggleScheduleView(view) {
-            const listDiv = document.getElementById('schedule-list-view');
-            const calDiv = document.getElementById('schedule-calendar-view');
+        function toggleScheduleView(type) {
+            const list = document.getElementById('schedule-list-view');
+            const cal = document.getElementById('schedule-calendar-view');
             const btnList = document.getElementById('btn-list-view');
             const btnCal = document.getElementById('btn-cal-view');
 
-            if(view === 'list') {
-                listDiv.style.display = 'block';
-                calDiv.style.display = 'none';
+            if(type === 'list') {
+                list.style.display = 'block';
+                cal.style.display = 'none';
                 btnList.classList.add('active');
                 btnCal.classList.remove('active');
             } else {
-                listDiv.style.display = 'none';
-                calDiv.style.display = 'block';
+                list.style.display = 'none';
+                cal.style.display = 'block';
                 btnList.classList.remove('active');
                 btnCal.classList.add('active');
-                setTimeout(() => personalCalendar.render(), 100);
+                setTimeout(() => personalCalendar.render(), 50);
             }
         }
 
-        async function fillReportSelect() {
-            const { data } = await sb.from('sluzby').select('*').eq('kierowca', currentUser.user).eq('status', 'zatwierdzona');
-            const sel = document.getElementById('report-service-select');
-            sel.innerHTML = data && data.length ? data.map(s => `<option value="${s.id}">${s.data} - Linia ${s.linia}</option>`).join('') : '<option value="">Brak zatwierdzonych służb</option>';
+        function initCalendars() {
+            const calEl = document.getElementById('calendar');
+            calendar = new FullCalendar.Calendar(calEl, {
+                initialView: 'dayGridMonth',
+                locale: 'pl',
+                selectable: true,
+                headerToolbar: { left: 'prev,next', center: 'title', right: '' },
+                dateClick: function(info) {
+                    const today = new Date().toISOString().split('T')[0];
+                    if(info.dateStr < today) {
+                        showAlert('Błąd', 'Nie można wnioskować o datę wsteczną!', 'error');
+                        return;
+                    }
+                    selectedDate = info.dateStr;
+                    document.getElementById('date-label').innerText = "Wybrana data: " + selectedDate;
+                    document.getElementById('pref-modal').style.display = 'flex';
+                }
+            });
+
+            const pCalEl = document.getElementById('personal-calendar');
+            personalCalendar = new FullCalendar.Calendar(pCalEl, {
+                initialView: 'dayGridMonth',
+                locale: 'pl',
+                headerToolbar: { left: 'prev,next', center: 'title', right: '' },
+                height: 'auto',
+                events: async function(info, successCallback) {
+                    const { data } = await sb.from('sluzby').select('*').eq('username', currentUser.user);
+                    const evs = data.map(s => ({
+                        title: `${s.linia} (${s.autobus})`,
+                        start: s.data,
+                        backgroundColor: s.status === 'zatwierdzona' ? '#2ecc71' : '#f4c430',
+                        borderColor: 'transparent'
+                    }));
+                    successCallback(evs);
+                }
+            });
         }
 
-        async function submitReport() {
-            const id = document.getElementById('report-service-select').value;
-            const km = document.getElementById('report-km').value;
-            const scr = document.getElementById('report-scr').value;
-            if(!id || !km || !scr) { showAlert('Błąd', 'Uzupełnij wszystkie pola raportu!', 'error'); return; }
-            await sb.from('sluzby').update({ status: 'oczekuje_na_spr_raportu', raport_km: km, raport_scr: scr }).eq('id', id);
-            showAlert('Raport', 'Raport wysłany do sprawdzenia!', 'success');
-            checkTodayDuty(); switchView('home');
+        function openCalendar() {
+            document.getElementById('calendar-modal').style.display = 'flex';
+            setTimeout(() => calendar.render(), 200);
         }
 
-        function fillAdminSelect() { document.getElementById('adm-user-select').innerHTML = USERS.map(u => `<option value="${u.user}">${u.user}</option>`).join(''); }
+        async function submitService() {
+            const bus = document.getElementById('pref-input').value;
+            const laczona = document.getElementById('laczona-input').value;
+            if(!bus) { showAlert('Błąd', 'Podaj preferowany autobus!', 'error'); return; }
 
-        async function adminAddService() {
-            const user = document.getElementById('adm-user-select').value;
-            const date = document.getElementById('adm-date').value;
-            const bus = document.getElementById('adm-bus').value;
-            const line = document.getElementById('adm-line').value;
-            const km = parseFloat(document.getElementById('adm-km').value) || 0;
-            if(!date) { showAlert('Błąd', 'Podaj datę służby!', 'error'); return; }
-            await sb.from('sluzby').insert([{ kierowca: user, data: date, pojazd: bus, linia: line, status: 'zatwierdzona' }]);
-            if(km > 0) await sb.from('stats').insert([{ username: user, kilometers: km }]);
-            showAlert('Admin', 'Służba dodana pomyślnie!', 'success');
-            refreshAdminPanel(); refreshData();
-        }
+            const { error } = await sb.from('sluzby').insert([{
+                username: currentUser.user,
+                data: selectedDate,
+                autobus: bus,
+                linia: 'OCZEKUJE',
+                status: 'oczekuje',
+                laczona: laczona
+            }]);
 
-        async function approveService(id) {
-            const line = document.getElementById(`line-input-${id}`).value;
-            if(!line) { showAlert('Błąd', 'Wpisz numer linii!', 'error'); return; }
-            await sb.from('sluzby').update({ status: 'zatwierdzona', linia: line }).eq('id', id);
-            showAlert('Admin', 'Służba została zatwierdzona!', 'success');
-            refreshAdminPanel(); initCalendar();
-        }
-
-        async function finalizeReport(id, user) {
-            const km = parseFloat(document.getElementById(`final-km-${id}`).value);
-            if(isNaN(km)) { showAlert('Błąd', 'Wpisz poprawną liczbę kilometrów!', 'error'); return; }
-            await sb.from('stats').insert([{ username: user, kilometers: km }]);
-            await sb.from('sluzby').update({ status: 'zakończona' }).eq('id', id);
-            showAlert('Ranking', 'Kilometry dodane do rankingu!', 'success');
-            refreshAdminPanel(); refreshData();
-        }
-
-        async function deleteService(id) { 
-            if(confirm("Czy na pewno chcesz usunąć tę służbę?")) { 
-                await sb.from('sluzby').delete().eq('id', id); 
-                showAlert('Admin', 'Służba usunięta.', 'info');
-                refreshAdminPanel(); 
-            } 
-        }
-
-        async function refreshAdminPanel() {
-            const { data: recSetting } = await sb.from('settings').select('*').eq('key', 'rec_active').maybeSingle();
-            const statusBox = document.getElementById('adm-rec-status');
-            if(recSetting) {
-                const active = recSetting.value === 'true';
-                statusBox.innerHTML = `Status: <b style="color:${active ? 'var(--green)' : 'var(--accent)'}">${active ? 'WŁĄCZONA' : 'WYŁĄCZONA'}</b>`;
-            } else { statusBox.innerHTML = 'Status: <b style="color:var(--text-dim)">WYŁĄCZONA</b>'; }
-
-            const { data: all } = await sb.from('sluzby').select('*').order('data', { ascending: false });
-            if(!all) return;
-            const reportsBody = document.getElementById('admin-reports-body');
-            const toCheck = all.filter(r => r.status === 'oczekuje_na_spr_raportu');
-            reportsBody.innerHTML = toCheck.length ? toCheck.map(r => `
-                <tr>
-                    <td style="color:var(--yellow)">${r.kierowca}</td>
-                    <td>${r.linia}</td><td>${r.raport_km} km</td>
-                    <td><a href="${r.raport_scr}" target="_blank" style="color:cyan">POKAŻ SCREEN</a></td>
-                    <td><input type="number" id="final-km-${r.id}" value="${r.raport_km}" style="width:60px; background:#000; color:#fff; border:1px solid #444; padding:5px;"></td>
-                    <td><button class="btn btn-yellow" style="padding:5px 10px" onclick="finalizeReport(${r.id}, '${r.kierowca}')">ZATWIERDŹ</button></td>
-                </tr>
-            `).join('') : '<tr><td colspan="6">Brak nowych raportów</td></tr>';
-            const requestsBody = document.getElementById('admin-requests-body');
-            requestsBody.innerHTML = all.map(r => `
-                <tr>
-                    <td>${r.data}</td><td style="color:var(--yellow)">${r.kierowca}</td><td>${r.pojazd}</td><td>${r.linia || '---'}</td>
-                    <td><span class="badge ${r.status === 'zatwierdzona' ? 'badge-active' : (r.status === 'oczekuje_na_spr_raportu' ? 'badge-review' : 'badge-pending')}">${r.status}</span></td>
-                    <td>
-                        ${r.status === 'oczekujący' ? `<div class="approve-box"><input type="text" id="line-input-${r.id}" placeholder="Linia"><button class="btn btn-green" style="padding:5px" onclick="approveService(${r.id})">OK</button></div>` 
-                        : `<button class="btn btn-accent" style="padding:5px 10px; font-size:10px" onclick="deleteService(${r.id})">USUŃ</button>`}
-                    </td>
-                </tr>
-            `).join('');
-
-            const { data: recs } = await sb.from('rekrutacja').select('*').order('id', { ascending: false });
-            const recBody = document.getElementById('admin-recruitment-body');
-            if(recBody) {
-                recBody.innerHTML = recs && recs.length ? recs.map(r => `
-                    <tr>
-                        <td style="color:var(--yellow)">${r.nick}</td>
-                        <td>${r.birth}</td>
-                        <td style="font-size:10px; max-width:300px; white-space: pre-wrap;">${r.q_sobie ? r.q_sobie.join('\n') : 'brak'}</td>
-                        <td>${r.quiz ? r.quiz.filter((ans, idx) => ans === quizQuestions[idx]?.correct).length : 0}/5</td>
-                        <td><button class="btn btn-accent" style="padding:5px 10px; font-size:10px" onclick="deleteRec(${r.id})">USUŃ</button></td>
-                    </tr>
-                `).join('') : '<tr><td colspan="5">Brak nowych podań</td></tr>';
+            if(!error) {
+                showAlert('Sukces', 'Wniosek został wysłany!', 'success');
+                closeAll();
+                refreshData();
             }
-        }
-
-        async function checkTodayDuty() {
-            const dzis = new Date().toISOString().split('T')[0];
-            const { data } = await sb.from('sluzby').select('*').eq('kierowca', currentUser.user).eq('data', dzis).eq('status', 'zatwierdzona').maybeSingle();
-            const card = document.getElementById('today-duty');
-            if(data) {
-                card.style.display = 'block';
-                document.getElementById('duty-line').innerText = data.linia || "??";
-                document.getElementById('duty-bus').innerText = data.pojazd;
-                startCountdown();
-            } else { card.style.display = 'none'; if(timerInterval) clearInterval(timerInterval); }
         }
 
         async function refreshData() {
@@ -793,92 +543,304 @@
                 });
                 document.getElementById('user-km').innerText = uSum.toFixed(1) + " km";
                 document.getElementById('total-km').innerText = tSum.toFixed(1) + " km";
+                document.getElementById('shop-km').innerText = uSum.toFixed(1) + " km";
+
                 const sorted = Object.entries(r).sort((a,b) => b[1] - a[1]);
                 document.getElementById('ranking-body').innerHTML = sorted.map(([n, k], i) => 
                     `<tr style="border-bottom: 1px solid var(--border); height: 50px;"><td>${n} ${i===0?'👑':''}</td><td><b>${k.toFixed(1)} km</b></td></tr>`
                 ).join('');
             }
         }
-        async function deleteRec(id) {
-            if(confirm("Czy na pewno chcesz usunąć to podanie?")) {
-                const { error } = await sb.from('rekrutacja').delete().eq('id', id);
-                if (error) {
-                    alert("Błąd podczas usuwania: " + error.message);
-                } else {
-                    refreshAdminPanel();
-                }
+
+        async function loadReportOptions() {
+            const { data } = await sb.from('sluzby').select('*').eq('username', currentUser.user).eq('status', 'zatwierdzona');
+            const sel = document.getElementById('report-service-select');
+            sel.innerHTML = data.map(s => `<option value="${s.id}">${s.data} | Linia: ${s.linia}</option>`).join('');
+        }
+
+        async function submitReport() {
+            const sId = document.getElementById('report-service-select').value;
+            const km = document.getElementById('report-km').value;
+            const scr = document.getElementById('report-scr').value;
+
+            if(!km || !scr) { showAlert('Błąd', 'Uzupełnij wszystkie pola!', 'error'); return; }
+
+            const { error } = await sb.from('raporty').insert([{
+                username: currentUser.user,
+                sluzba_id: sId,
+                kilometers: parseFloat(km),
+                screen: scr,
+                status: 'do sprawdzenia'
+            }]);
+
+            if(!error) {
+                showAlert('Sukces', 'Raport wysłany do dyspozytora!', 'success');
+                switchView('home');
             }
         }
 
-        // LOGIKA SKLEPU
-        const SHOP_ITEMS = [
-            { name: "Solaris Urbino 8,9 LE", price: 0, desc: "Darmowy autobus dla każdego! Hasło w modalu.", isFree: true, password: "vMPKGRYF" },
-            { name: "Solaris Urbino III 8,9 MPK Drobin", price: 300, desc: "Dostęp do autobusu z linią osiedlową 252." },
-            { name: "Volvo 7900 Electric", price: 750, desc: "Po zakupie wymagana weryfikacja profilu!" },
-            { name: "Solaris Urbino 18 II PKA Gdynia", price: 1500, desc: "Po zakupie wymagana weryfikacja profilu!" }
-        ];
+        async function loadAdminData() {
+            const { data: users } = await sb.from('stats').select('username');
+            const uSet = [...new Set(users.map(u => u.username))];
+            document.getElementById('adm-user-select').innerHTML = uSet.map(u => `<option>${u}</option>`).join('');
 
-        async function refreshShop() {
-            const { data } = await sb.from('stats').select('kilometers').eq('username', currentUser.user);
-            const myKm = data ? data.reduce((sum, r) => sum + r.kilometers, 0) : 0;
-            document.getElementById('shop-km').innerText = myKm.toFixed(1) + " km";
+            const { data: reqs } = await sb.from('sluzby').select('*').eq('status', 'oczekuje');
+            document.getElementById('admin-requests-body').innerHTML = reqs.map(r => `
+                <tr>
+                    <td>${r.data}</td>
+                    <td>${r.username}</td>
+                    <td><input type="text" id="bus-${r.id}" value="${r.autobus}"></td>
+                    <td><input type="text" id="line-${r.id}" placeholder="Linia"></td>
+                    <td><span class="badge badge-pending">Oczekuje</span></td>
+                    <td><button class="btn btn-green" onclick="approveService(${r.id})">Zatwierdź</button></td>
+                </tr>
+            `).join('');
 
-            const { data: garage } = await sb.from('garaz').select('pojazd').eq('username', currentUser.user);
-            const owned = garage ? garage.map(g => g.pojazd) : [];
+            const { data: raps } = await sb.from('raporty').select('*').eq('status', 'do sprawdzenia');
+            document.getElementById('admin-reports-body').innerHTML = raps.map(r => `
+                <tr>
+                    <td>${r.username}</td>
+                    <td>${r.sluzba_id}</td>
+                    <td>${r.kilometers} kursów</td>
+                    <td><a href="${r.screen}" target="_blank" style="color:var(--yellow)">Pokaż</a></td>
+                    <td><div class="approve-box"><input type="number" id="val-${r.id}" placeholder="KM"></div></td>
+                    <td><button class="btn btn-green" onclick="approveReport(${r.id}, '${r.username}')">OK</button></td>
+                </tr>
+            `).join('');
 
-            document.getElementById('shop-list').innerHTML = SHOP_ITEMS.map(item => {
-                const isOwned = owned.includes(item.name);
-                let btnText = isOwned ? 'POSIADASZ' : (myKm < item.price ? 'BRAK ŚRODKÓW' : 'KUP TERAZ');
-                let btnClass = isOwned ? 'btn-green' : 'btn-accent';
-                let onclickAction = `buyVehicle('${item.name}', ${item.price})`;
+            const { data: recs } = await sb.from('rekrutacja').select('*');
+            document.getElementById('admin-recruitment-body').innerHTML = recs.map(r => `
+                <tr>
+                    <td><b>${r.username}</b><br><small>${r.email}</small></td>
+                    <td>${r.birth}</td>
+                    <td style="font-size:11px; max-width:200px;">
+                        1: ${r.q1}<br>2: ${r.q2}<br>3: ${r.q3}<br>4: ${r.q4}<br>5: ${r.q5}
+                    </td>
+                    <td><b>${r.score}/5</b></td>
+                    <td>
+                        <button class="btn btn-green" onclick="showAlert('System', 'Funkcja akceptacji wkrótce', 'info')">TAK</button>
+                        <button class="btn btn-accent" onclick="deleteRec(${r.id})">NIE</button>
+                    </td>
+                </tr>
+            `).join('');
 
-                if(item.isFree) {
-                    if(isOwned) {
-                        btnText = 'ZOBACZ HASŁO';
-                        btnClass = 'btn-yellow';
-                        onclickAction = `showAlert('Hasło', 'Hasło do autobusu: ${item.password}', 'info')`;
-                    } else {
-                        btnText = 'ODBIERZ ZA DARMO';
-                        btnClass = 'btn-green';
-                    }
+            const { data: settings } = await sb.from('ustawienia').select('*').eq('klucz', 'rekrutacja_otwarta').single();
+            document.getElementById('adm-rec-status').innerHTML = `Status: <b>${settings.wartosc === 'true' ? 'OTWARTA' : 'ZAMKNIĘTA'}</b>`;
+        }
+
+        async function approveService(id) {
+            const bus = document.getElementById('bus-' + id).value;
+            const line = document.getElementById('line-' + id).value;
+            if(!line) { alert('Podaj linię!'); return; }
+            await sb.from('sluzby').update({ autobus: bus, linia: line, status: 'zatwierdzona' }).eq('id', id);
+            loadAdminData();
+        }
+
+        async function approveReport(id, user) {
+            const kmVal = document.getElementById('val-' + id).value;
+            if(!kmVal) { alert('Podaj ilość KM!'); return; }
+            await sb.from('stats').insert([{ username: user, kilometers: parseFloat(kmVal) }]);
+            await sb.from('raporty').update({ status: 'zatwierdzony' }).eq('id', id);
+            loadAdminData();
+            refreshData();
+        }
+
+        async function adminAddService() {
+            const u = document.getElementById('adm-user-select').value;
+            const d = document.getElementById('adm-date').value;
+            const b = document.getElementById('adm-bus').value;
+            const l = document.getElementById('adm-line').value;
+            if(!d || !b || !l) return;
+            await sb.from('sluzby').insert([{ username: u, data: d, autobus: b, linia: l, status: 'zatwierdzona' }]);
+            loadAdminData();
+        }
+
+        async function checkTodayDuty() {
+            const today = new Date().toISOString().split('T')[0];
+            const { data } = await sb.from('sluzby').select('*').eq('username', currentUser.user).eq('data', today).eq('status', 'zatwierdzona').single();
+            
+            if(data) {
+                document.getElementById('today-duty').style.display = 'block';
+                document.getElementById('duty-line').innerText = data.linia;
+                document.getElementById('duty-bus').innerText = data.autobus;
+                startDutyTimer();
+            }
+        }
+
+        function startDutyTimer() {
+            if(timerInterval) clearInterval(timerInterval);
+            const end = new Date();
+            end.setHours(23, 59, 59);
+
+            timerInterval = setInterval(() => {
+                const now = new Date();
+                const diff = end - now;
+                if(diff <= 0) {
+                    document.getElementById('duty-timer').innerText = "KONIEC CZASU";
+                    clearInterval(timerInterval);
+                    return;
                 }
+                const h = Math.floor(diff/3600000).toString().padStart(2,'0');
+                const m = Math.floor((diff%3600000)/60000).toString().padStart(2,'0');
+                const s = Math.floor((diff%60000)/1000).toString().padStart(2,'0');
+                document.getElementById('duty-timer').innerText = `${h}:${m}:${s}`;
+            }, 1000);
+        }
 
+        function handleLogout() {
+            location.reload();
+        }
+
+        function resetSessionTimer() {
+            clearTimeout(sessionTimeout);
+            sessionTimeout = setTimeout(() => {
+                alert("Sesja wygasła z powodu nieaktywności.");
+                handleLogout();
+            }, 900000); // 15 min
+        }
+
+        async function checkRecruitmentStatus() {
+            const { data } = await sb.from('ustawienia').select('*').eq('klucz', 'rekrutacja_otwarta').single();
+            if(data && data.wartosc === 'true') {
+                document.getElementById('login-page').style.display = 'none';
+                document.getElementById('recruitment-page').style.display = 'flex';
+            } else {
+                showAlert('Rekrutacja', 'Obecnie rekrutacja jest zamknięta. Spróbuj później!', 'info');
+            }
+        }
+
+        function nextRecruitStep(step) {
+            if(step === 2) {
+                const nick = document.getElementById('rec-nick').value;
+                if(!nick) { alert('Podaj nick!'); return; }
+            }
+            document.querySelectorAll('.recruit-step').forEach(s => s.classList.remove('active'));
+            document.getElementById('recruit-step-' + step).classList.add('active');
+        }
+
+        function startQuiz() {
+            nextRecruitStep(4);
+            currentQuizIndex = 0;
+            quizAnswers = [];
+            showQuizQuestion();
+        }
+
+        function showQuizQuestion() {
+            const q = quizQuestions[currentQuizIndex];
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = `
+                <h3 style="margin-bottom:20px;">${q.q}</h3>
+                ${q.a.map((opt, i) => `<div class="quiz-option" onclick="handleQuizAnswer(${i})">${opt}</div>`).join('')}
+            `;
+            startRecTimer();
+        }
+
+        function startRecTimer() {
+            let timeLeft = 30;
+            document.getElementById('recruit-timer').innerText = timeLeft + "s";
+            clearInterval(recTimer);
+            recTimer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('recruit-timer').innerText = timeLeft + "s";
+                if(timeLeft <= 0) {
+                    handleQuizAnswer(-1);
+                }
+            }, 1000);
+        }
+
+        function handleQuizAnswer(idx) {
+            clearInterval(recTimer);
+            quizAnswers.push(idx);
+            currentQuizIndex++;
+            if(currentQuizIndex < quizQuestions.length) {
+                showQuizQuestion();
+            } else {
+                finishRecruitment();
+            }
+        }
+
+        async function finishRecruitment() {
+            let score = 0;
+            quizAnswers.forEach((ans, i) => {
+                if(ans === quizQuestions[i].correct) score++;
+            });
+
+            const { error } = await sb.from('rekrutacja').insert([{
+                username: document.getElementById('rec-nick').value,
+                birth: document.getElementById('rec-birth').value,
+                email: document.getElementById('rec-email').value,
+                q1: document.getElementById('rec-q1').value,
+                q2: document.getElementById('rec-q2').value,
+                q3: document.getElementById('rec-q3').value,
+                q4: document.getElementById('rec-q4').value,
+                q5: document.getElementById('rec-q5').value,
+                score: score
+            }]);
+
+            if(!error) {
+                document.querySelector('.recruitment-box').innerHTML = `
+                    <h2 style="color:var(--green)">Podanie wysłane!</h2>
+                    <p>Twój wynik z testu: ${score}/5</p>
+                    <p>Czekaj na informację na Discordzie.</p>
+                    <button class="btn btn-accent" onclick="location.reload()">Powrót</button>
+                `;
+            }
+        }
+
+        async function setRecStatus(open) {
+            await sb.from('ustawienia').update({ wartosc: open.toString() }).eq('klucz', 'rekrutacja_otwarta');
+            loadAdminData();
+        }
+
+        async function deleteRec(id) {
+            if(confirm("Czy na pewno chcesz usunąć to podanie?")) {
+                await sb.from('rekrutacja').delete().eq('id', id);
+                loadAdminData();
+            }
+        }
+
+        async function loadUserSchedule() {
+            const { data } = await sb.from('sluzby').select('*').eq('username', currentUser.user).order('data', { ascending: false });
+            document.getElementById('user-schedule-body').innerHTML = data.map(s => `
+                <tr>
+                    <td>${s.data}</td>
+                    <td>${s.linia}</td>
+                    <td>${s.autobus}</td>
+                    <td><span class="badge ${s.status === 'zatwierdzona' ? 'badge-active' : 'badge-review'}">${s.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function refreshShop() {
+            const shopList = document.getElementById('shop-list');
+            const userKm = parseFloat(document.getElementById('user-km').innerText);
+            
+            shopList.innerHTML = SHOP_ITEMS.map(item => {
+                const canAfford = userKm >= item.price;
                 return `
-                    <div class="stat-card" style="border: 1px solid ${isOwned ? 'var(--green)' : 'var(--border)'}">
+                    <div class="stat-card" style="border-color: ${canAfford ? 'var(--green)' : 'var(--border)'}">
                         <h3>${item.name}</h3>
                         <p style="color:var(--text-dim); font-size:12px">${item.desc}</p>
-                        <p style="font-size:24px; color:var(--yellow); margin:15px 0">${item.price} km</p>
-                        <button class="btn ${btnClass}" 
+                        <p style="font-size:24px; color:var(--yellow); margin:15px 0">${item.price.toFixed(1)} km</p>
+                        <button class="btn ${canAfford ? 'btn-green' : 'btn-accent'}" 
                             style="width:100%; justify-content:center"
-                            ${!item.isFree && (isOwned || myKm < item.price) ? 'disabled' : ''} 
-                            onclick="${onclickAction}">
-                            ${btnText}
+                            ${!canAfford ? 'disabled' : ''} 
+                            onclick="buyItem('${item.name}', ${item.price})">
+                            ${canAfford ? 'KUP TERAZ' : 'BRAK ŚRODKÓW'}
                         </button>
                     </div>
                 `;
             }).join('');
         }
 
-        async function buyVehicle(name, price) {
-            const item = SHOP_ITEMS.find(i => i.name === name);
-            const isFree = item && item.isFree;
-
-            if(isFree || confirm(`Czy chcesz kupić ${name} za ${price} km?`)) {
-                if(!isFree) {
-                    const { error: statsError } = await sb.from('stats').insert([{ username: currentUser.user, kilometers: -price }]);
-                    if(statsError) { showAlert('Błąd', 'Błąd podczas płatności!', 'error'); return; }
+        async function buyItem(name, price) {
+            if(confirm(`Czy chcesz kupić ${name} za ${price} km?`)) {
+                const { error } = await sb.from('stats').insert([{ username: currentUser.user, kilometers: -price }]);
+                if(!error) {
+                    showAlert('Sklep', `Zakupiono: ${name}!`, 'success');
+                    refreshData();
+                    refreshShop();
                 }
-                
-                await sb.from('garaz').insert([{ username: currentUser.user, pojazd: name }]);
-                
-                if(isFree && item.password) {
-                    showAlert('Sukces', `Odebrano pomyślnie! Hasło to: ${item.password}`, 'success');
-                } else {
-                    showAlert('Sklep', `Gratulacje! Zakupiono ${name}`, 'success');
-                }
-                
-                refreshShop();
-                refreshData();
             }
         }
     </script>
