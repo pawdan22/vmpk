@@ -1017,7 +1017,7 @@ requestsBody.innerHTML = sortedRequests.map(r => `
                 if(isFree && item.password) {
                     showAlert('Sukces', `Odebrano pomyślnie! Hasło to: ${item.password}`, 'success');
                 } else { showAlert('Sklep', `Gratulacje! Zakupiono ${name}`, 'success'); }
-                refreshShop(); refreshData();
+                refreshShop(); refreshData();refreshUserGarage();
             }
         }
     </script>
