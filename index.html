@@ -1013,21 +1013,36 @@ requestsBody.innerHTML = sortedRequests.map(r => `
             }).join('');
         }
 
-        async function buyVehicle(name, price) {
-            const item = SHOP_ITEMS.find(i => i.name === name);
-            const isFree = item && item.isFree;
-            if(isFree || confirm(`Czy chcesz kupić ${name} za ${price} km?`)) {
-                if(!isFree) {
-                    const { error: statsError } = await sb.from('stats').insert([{ username: currentUser.user, kilometers: -price }]);
-                    if(statsError) { showAlert('Błąd', 'Błąd podczas płatności!', 'error'); return; }
-                }
-                await sb.from('garaz').insert([{ username: currentUser.user, pojazd: name }]);
-                if(isFree && item.password) {
-                    showAlert('Sukces', `Odebrano pomyślnie! Hasło to: ${item.password}`, 'success');
-                } else { showAlert('Sklep', `Gratulacje! Zakupiono ${name}`, 'success'); }
-                refreshShop(); refreshData();refreshUserGarage();
+      async function buyVehicle(name, price) {
+    const item = SHOP_ITEMS.find(i => i.name === name);
+    const isFree = item && item.isFree;
+
+    if(isFree || confirm(`Czy chcesz kupić ${name} za ${price} km?`)) {
+        // 1. Płatność (tylko jeśli nie jest darmowy)
+        if(!isFree) {
+            const { error: statsError } = await sb.from('stats').insert([{ username: currentUser.user, kilometers: -price }]);
+            if(statsError) { 
+                showAlert('Błąd', 'Błąd podczas płatności!', 'error'); 
+                return; 
             }
         }
+
+        // 2. Dodanie do garażu w bazie
+        await sb.from('garaz').insert([{ username: currentUser.user, pojazd: name }]);
+
+        // 3. WYŚWIETLENIE HASŁA (Dla każdego wozu, który ma przypisane hasło w SHOP_ITEMS)
+        if(item && item.password) {
+            showAlert('Sukces', `Operacja udana! Pojazd: <b>${name}</b><br><br>Hasło to: <b style="font-size:18px; color:var(--yellow);">${item.password}</b>`, 'success');
+        } else {
+            showAlert('Sklep', `Gratulacje! Zakupiono ${name}`, 'success');
+        }
+
+        // 4. Odświeżenie wszystkiego
+        refreshShop(); 
+        refreshData();
+        refreshUserGarage();
+    }
+}
     </script>
 </body>
 </html>
