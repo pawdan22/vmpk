@@ -590,7 +590,7 @@
                 document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
                 fillAdminSelect();
             }
-            initCalendar(); refreshData(); checkTodayDuty();
+            initCalendar(); refreshData(); checkTodayDuty();refreshUserGarage();
             if(currentUser.isAdmin) refreshAdminPanel();
             resetSessionTimer();
         }
