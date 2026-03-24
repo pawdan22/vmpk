@@ -785,10 +785,23 @@
                 statusBox.innerHTML = `Status: <b style="color:${active ? 'var(--green)' : 'var(--accent)'}">${active ? 'WŁĄCZONA' : 'WYŁĄCZONA'}</b>`;
             } else { statusBox.innerHTML = 'Status: <b style="color:var(--text-dim)">WYŁĄCZONA</b>'; }
 
-            const { data: all } = await sb.from('sluzby').select('*').order('data', { ascending: false });
+            // pobieramy dzisiejszą datę w formacie YYYY-MM-DD
+            const dzisiaj = new Date().toISOString().split('T')[0];
+
+            // pobieramy: te z dzisiaj/przyszłości LUB te, które już mają status zatwierdzony/raport/zakończony
+            const { data: all, error: fetchErr } = await sb.from('sluzby')
+                .select('*')
+                .or(`data.gte.${dzisiaj},status.in.("zatwierdzona","oczekuje_na_spr_raportu","zakończona")`)
+                .order('data', { ascending: false });
+
+            if(fetchErr) {
+                console.error("Błąd pobierania danych:", fetchErr);
+                return;
+            }
             if(!all) return;
 
             const reportsBody = document.getElementById('admin-reports-body');
+            // raporty do sprawdzenia (filtrujemy z już pobranych danych 'all')
             const toCheck = all.filter(r => r.status === 'oczekuje_na_spr_raportu');
             reportsBody.innerHTML = toCheck.length ? toCheck.map(r => `
                 <tr>
