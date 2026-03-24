@@ -947,39 +947,34 @@ requestsBody.innerHTML = sortedRequests.map(r => `
         ];
 
     async function refreshUserGarage() {
-            // 1. Pobieramy pojazdy przypisane do kierowcy z bazy
-            const { data, error } = await sb.from('garaz')
-                .select('pojazd')
-                .eq('username', currentUser.user);
+    const { data, error } = await sb.from('garaz')
+        .select('pojazd')
+        .eq('username', currentUser.user);
 
-            const container = document.getElementById('user-garage-list');
-            if (!container) return;
+    const container = document.getElementById('user-garage-list');
+    if (!container) return;
 
-            if (error || !data || data.length === 0) {
-                container.innerHTML = '<span style="color: var(--text-dim); font-size: 12px;">Twój garaż jest pusty. Kup pojazd w sklepie!</span>';
-                return;
-            }
+    if (error || !data || data.length === 0) {
+        container.innerHTML = '<span style="color: var(--text-dim); font-size: 12px;">Twój garaż jest pusty.</span>';
+        return;
+    }
 
-            // 2. Generujemy kod HTML dla każdego pojazdu
-            container.innerHTML = data.map(dbItem => {
-                // Znajdź ten pojazd na liście SHOP_ITEMS, żeby wziąć hasło
-                const shopItem = SHOP_ITEMS.find(item => item.name === dbItem.pojazd);
-                const passwordText = shopItem ? shopItem.password : "Brak hasła";
+    container.innerHTML = data.map(dbItem => {
+        const shopItem = SHOP_ITEMS.find(item => item.name === dbItem.pojazd);
+        const passwordText = shopItem ? shopItem.password : "Brak hasła";
+        
+        // czyścimy nazwę wozu z ewentualnych apostrofów, żeby nie psuły JS
+        const safeName = dbItem.pojazd.replace(/'/g, "\\'");
 
-                // Ustaw akcję kliknięcia, aby pokazać Alert
-                const onclickAction = `showAlert('Hasło do wozu', 'Pojazd: <b>${dbItem.pojazd}</b><br><br>Hasło: <b style="font-size:18px; color:var(--yellow);">${passwordText}</b>', 'info')`;
-
-                return `
-                    <div style="background: #1a1a1a; border: 1px solid var(--green); padding: 5px 12px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 8px; cursor: pointer;" 
-                         onclick="${onclickAction}"
-                         class="garage-bus-btn">
-                        <i class="fa-solid fa-bus" style="color: var(--green);"></i> 
-                        <b style="color: #fff;">${dbItem.pojazd}</b>
-                    </div>
-                `;
-            }).join('');
-        }
-    
+        return `
+            <div style="background: #1a1a1a; border: 1px solid var(--green); padding: 5px 12px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 8px; cursor: pointer; color: #fff;" 
+                 onclick="showAlert('Hasło do wozu', 'Pojazd: <b>${safeName}</b><br><br>Hasło: <b style=\'font-size:18px; color:var(--yellow);\'>${passwordText}</b>', 'info')">
+                <i class="fa-solid fa-bus" style="color: var(--green);"></i> 
+                <b>${dbItem.pojazd}</b>
+            </div>
+        `;
+    }).join('');
+}
         async function refreshShop() {
             const { data } = await sb.from('stats').select('kilometers').eq('username', currentUser.user);
             const myKm = data ? data.reduce((sum, r) => sum + r.kilometers, 0) : 0;
