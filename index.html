@@ -218,6 +218,15 @@
         <main>
             <div id="view-home" class="view-section active">
                 <h1>Panel Kierowcy vMPK Drobin</h1>
+
+                <div class="stat-card" style="margin-bottom: 20px; border: 1px solid var(--border); background: rgba(255,255,255,0.03);">
+    <h3 style="margin:0 0 10px 0; font-size: 14px; color: var(--text-dim);">
+        <i class="fa-solid fa-warehouse"></i> TWÓJ EKWIPUNEK (GARAŻ)
+    </h3>
+    <div id="user-garage-list" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <span style="color: var(--text-dim); font-size: 12px;">Ładowanie Twoich pojazdów...</span>
+    </div>
+</div>
                 
                 <div id="today-duty" class="today-duty-card" style="display: none;">
     <h3 style="margin:0; color:var(--yellow); font-size:12px; text-transform:uppercase; letter-spacing: 1px;">
@@ -937,6 +946,27 @@ requestsBody.innerHTML = sortedRequests.map(r => `
             { name: "Solaris Urbino 18 II PKA Gdynia", price: 1000, desc: "Po zakupie wymagana weryfikacja profilu!" }
         ];
 
+    async function refreshUserGarage() {
+    const { data, error } = await sb.from('garaz')
+        .select('pojazd')
+        .eq('username', currentUser.user);
+
+    const container = document.getElementById('user-garage-list');
+    if (!container) return;
+
+    if (error || !data || data.length === 0) {
+        container.innerHTML = '<span style="color: var(--text-dim); font-size: 12px;">Twój garaż jest pusty. Kup pierwszy pojazd w sklepie!</span>';
+        return;
+    }
+
+    // Generujemy listę autobusów jako małe "odznaki"
+    container.innerHTML = data.map(item => `
+        <div style="background: var(--bg-card); border: 1px solid var(--green); padding: 5px 12px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 8px;">
+            <i class="fa-solid fa-bus" style="color: var(--green);"></i> 
+            <b style="color: #fff;">${item.pojazd}</b>
+        </div>
+    `).join('');
+}
         async function refreshShop() {
             const { data } = await sb.from('stats').select('kilometers').eq('username', currentUser.user);
             const myKm = data ? data.reduce((sum, r) => sum + r.kilometers, 0) : 0;
