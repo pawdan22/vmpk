@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pl">
 <head>
@@ -976,52 +977,38 @@ requestsBody.innerHTML = sortedRequests.map(r => `
     }).join('');
 }
         async function refreshShop() {
-            // 1. Pobieramy kilometry użytkownika
-            const { data: stats } = await sb.from('stats').select('kilometers').eq('username', currentUser.user);
-            const myKm = stats ? stats.reduce((sum, r) => sum + r.kilometers, 0) : 0;
-            const kmDisplay = document.getElementById('shop-km');
-            if(kmDisplay) kmDisplay.innerText = myKm.toFixed(1) + " km";
-
-            // 2. Pobieramy co użytkownik już ma w garażu
+            const { data } = await sb.from('stats').select('kilometers').eq('username', currentUser.user);
+            const myKm = data ? data.reduce((sum, r) => sum + r.kilometers, 0) : 0;
+            document.getElementById('shop-km').innerText = myKm.toFixed(1) + " km";
             const { data: garage } = await sb.from('garaz').select('pojazd').eq('username', currentUser.user);
-            const owned = garage ? garage.map(g => g.pojazd.trim()) : [];
+            const owned = garage ? garage.map(g => g.pojazd) : [];
 
-            const shopList = document.getElementById('shop-list');
-            if(!shopList) return;
-
-            // 3. Generujemy listę przedmiotów
-            shopList.innerHTML = SHOP_ITEMS.map(item => {
-                const isOwned = owned.includes(item.name.trim());
-                const canAfford = myKm >= item.price || item.isFree;
-
-                // --- LOGIKA PRZYCISKU ---
-                let btnHtml = '';
-                
-                if (isOwned) {
-                    // JEŚLI POSIADA: Żółty przycisk "ZOBACZ HASŁO"
-                    btnHtml = `
-                        <button class="btn btn-accent" style="background: var(--yellow); color: #000;" 
-                                onclick="showAlert('Hasło do wozu', 'Pojazd: <b>${item.name}</b><br><br>Hasło: <b style=\'font-size:18px; color:var(--dark);\'>${item.password}</b>', 'info')">
-                            ZOBACZ HASŁO
-                        </button>`;
-                } else {
-                    // JEŚLI NIE POSIADA: Czerwony "KUP TERAZ" albo szary "BRAK ŚRODKÓW"
-                    const btnDisabled = !canAfford;
-                    const btnText = canAfford ? 'KUP TERAZ' : 'BRAK ŚRODKÓW';
-                    btnHtml = `
-                        <button class="btn ${canAfford ? 'btn-red' : ''}" 
-                                ${btnDisabled ? 'disabled' : ''} 
-                                onclick="buyVehicle('${item.name}', ${item.price})">
-                            ${btnText}
-                        </button>`;
+            document.getElementById('shop-list').innerHTML = SHOP_ITEMS.map(item => {
+                const isOwned = owned.includes(item.name);
+                let btnText = isOwned ? 'POSIADASZ' : (myKm < item.price ? 'BRAK ŚRODKÓW' : 'KUP TERAZ');
+                let btnClass = isOwned ? 'btn-green' : 'btn-accent';
+                let onclickAction = `buyVehicle('${item.name}', ${item.price})`;
+                if(item.isFree) {
+                    if(isOwned) {
+                        btnText = 'ZOBACZ HASŁO';
+                        btnClass = 'btn-yellow';
+                        onclickAction = `showAlert('Hasło', 'Hasło do autobusu: ${item.password}', 'info')`;
+                    } else {
+                        btnText = 'GRATIS🎁';
+                        btnClass = 'btn-green';
+                    }
                 }
-
                 return `
                     <div class="stat-card" style="border: 1px solid ${isOwned ? 'var(--green)' : 'var(--border)'}">
                         <h3>${item.name}</h3>
-                        <p style="font-size:12px; color:var(--text-dim); margin-bottom:10px;">${item.desc}</p>
-                        <p style="font-size:24px; color:var(--yellow); font-weight:bold;">${item.price} km</p>
-                        ${btnHtml}
+                        <p style="color:var(--text-dim); font-size:12px">${item.desc}</p>
+                        <p style="font-size:24px; color:var(--yellow); margin:15px 0">${item.price} km</p>
+                        <button class="btn ${btnClass}" 
+                            style="width:100%; justify-content:center"
+                            ${!item.isFree && (isOwned || myKm < item.price) ? 'disabled' : ''} 
+                            onclick="${onclickAction}">
+                            ${btnText}
+                        </button>
                     </div>
                 `;
             }).join('');
