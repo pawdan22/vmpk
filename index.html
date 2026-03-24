@@ -939,34 +939,47 @@ requestsBody.innerHTML = sortedRequests.map(r => `
 
         const SHOP_ITEMS = [
             { name: "Solaris Urbino 8,9 LE + Solaris Urbino 18 I PKA Gdynia", price: 0, desc: "Darmowy prezent dla każdego!", isFree: true, password: "vMPKGRYF" },
-            { name: "Solaris Urbino III 8,9 MPK Drobin", price: 300, desc: "Dostęp do autobusu z linią osiedlową 252." },
-            { name: "Volvo 7900 Electric ex. MPK Rzeszów", price: 400, desc: "Po zakupie wymagana weryfikacja profilu!" },
-            { name: "Solaris Urbino 18 III GAiT Gdańsk", price: 500, desc: "Po zakupie wymagana weryfikacja profilu!" },
-            { name: "Solaris Urbino 15 II PKM Sosnowiec", price: 750, desc: "Po zakupie wymagana weryfikacja profilu!" },
-            { name: "Solaris Urbino 18 II PKA Gdynia", price: 1000, desc: "Po zakupie wymagana weryfikacja profilu!" }
+            { name: "Solaris Urbino III 8,9 MPK Drobin", price: 300, desc: "Dostęp do autobusu z linią osiedlową 252.", password: "SolarkaOsiedle1" },
+            { name: "Volvo 7900 Electric ex. MPK Rzeszów", price: 400, desc: "Po zakupie wymagana weryfikacja profilu!", password: "ElektrykSzrot1" },
+            { name: "Solaris Urbino 18 III GAiT Gdańsk", price: 500, desc: "Po zakupie wymagana weryfikacja profilu!", password: "TylkoArkaGdynia" }, // To hasło dla Twojego wozu ze screena
+            { name: "Solaris Urbino 15 II PKM Sosnowiec", price: 750, desc: "Po zakupie wymagana weryfikacja profilu!", password: "ToNievGZM" },
+            { name: "Solaris Urbino 18 II PKA Gdynia", price: 1000, desc: "Po zakupie wymagana weryfikacja profilu!", password: "PieknyGruzik2" }
         ];
 
     async function refreshUserGarage() {
-    const { data, error } = await sb.from('garaz')
-        .select('pojazd')
-        .eq('username', currentUser.user);
+            // 1. Pobieramy pojazdy przypisane do kierowcy z bazy
+            const { data, error } = await sb.from('garaz')
+                .select('pojazd')
+                .eq('username', currentUser.user);
 
-    const container = document.getElementById('user-garage-list');
-    if (!container) return;
+            const container = document.getElementById('user-garage-list');
+            if (!container) return;
 
-    if (error || !data || data.length === 0) {
-        container.innerHTML = '<span style="color: var(--text-dim); font-size: 12px;">Twój garaż jest pusty. Kup pierwszy pojazd w sklepie!</span>';
-        return;
-    }
+            if (error || !data || data.length === 0) {
+                container.innerHTML = '<span style="color: var(--text-dim); font-size: 12px;">Twój garaż jest pusty. Kup pojazd w sklepie!</span>';
+                return;
+            }
 
-    // Generujemy listę autobusów jako małe "odznaki"
-    container.innerHTML = data.map(item => `
-        <div style="background: var(--bg-card); border: 1px solid var(--green); padding: 5px 12px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 8px;">
-            <i class="fa-solid fa-bus" style="color: var(--green);"></i> 
-            <b style="color: #fff;">${item.pojazd}</b>
-        </div>
-    `).join('');
-}
+            // 2. Generujemy kod HTML dla każdego pojazdu
+            container.innerHTML = data.map(dbItem => {
+                // Znajdź ten pojazd na liście SHOP_ITEMS, żeby wziąć hasło
+                const shopItem = SHOP_ITEMS.find(item => item.name === dbItem.pojazd);
+                const passwordText = shopItem ? shopItem.password : "Brak hasła";
+
+                // Ustaw akcję kliknięcia, aby pokazać Alert
+                const onclickAction = `showAlert('Hasło do wozu', 'Pojazd: <b>${dbItem.pojazd}</b><br><br>Hasło: <b style="font-size:18px; color:var(--yellow);">${passwordText}</b>', 'info')`;
+
+                return `
+                    <div style="background: #1a1a1a; border: 1px solid var(--green); padding: 5px 12px; border-radius: 20px; font-size: 11px; display: flex; align-items: center; gap: 8px; cursor: pointer;" 
+                         onclick="${onclickAction}"
+                         class="garage-bus-btn">
+                        <i class="fa-solid fa-bus" style="color: var(--green);"></i> 
+                        <b style="color: #fff;">${dbItem.pojazd}</b>
+                    </div>
+                `;
+            }).join('');
+        }
+    
         async function refreshShop() {
             const { data } = await sb.from('stats').select('kilometers').eq('username', currentUser.user);
             const myKm = data ? data.reduce((sum, r) => sum + r.kilometers, 0) : 0;
