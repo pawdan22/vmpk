@@ -117,13 +117,6 @@
         </div>
     </div>
 
-    <div class="admin-only card" style="margin-top: 20px;">
-    <h2><i class="fa-solid fa-users-viewfinder"></i> Lista Zapisanych na Sesje</h2>
-    <div id="admin-session-view">
-        <p style="color:var(--text-dim);">Pobieranie listy zapisanych...</p>
-    </div>
-</div>
-
     <div id="calendar-modal" class="modal-overlay">
         <div class="calendar-container">
             <span style="position:absolute; right:20px; top:15px; cursor:pointer;" onclick="closeAll()"><i class="fa-solid fa-xmark"></i></span>
@@ -472,7 +465,6 @@
             nextRecruitStep(4);
             showQuizQuestion();
         }
-    
 
         function showQuizQuestion() {
             if(currentQuizIndex >= quizQuestions.length) {
@@ -608,45 +600,6 @@
             if(currentUser.isAdmin) refreshAdminPanel();
             resetSessionTimer();
         }
-
-    async function refreshAdminSessionList() {
-    const container = document.getElementById('admin-session-view');
-    if (!container) return;
-
-    // 1. Pobieramy wszystkich zapisanych
-    const { data: allSignups, error } = await sb.from('sesje_zapisy').select('*');
-
-    if (error || !allSignups || allSignups.length === 0) {
-        container.innerHTML = '<p style="color:var(--text-dim);">Nikt jeszcze nie zapisał się na żadną sesję.</p>';
-        return;
-    }
-
-    // 2. Budujemy tabelkę z podziałem na daty
-    let html = `
-        <table style="width:100%; border-collapse: collapse; margin-top:10px; font-size:13px;">
-            <thead>
-                <tr style="border-bottom: 1px solid #333; text-align: left; color: var(--yellow);">
-                    <th style="padding:10px;">Data Sesji</th>
-                    <th style="padding:10px;">Kierowca</th>
-                    <th style="padding:10px;">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
-    allSignups.forEach(s => {
-        html += `
-            <tr style="border-bottom: 1px solid #222;">
-                <td style="padding:10px;"><b>${s.data_sesji}</b></td>
-                <td style="padding:10px;"><i class="fa-solid fa-user"></i> ${s.username}</td>
-                <td style="padding:10px;"><span style="color:var(--green)">● Wpisany</span></td>
-            </tr>
-        `;
-    });
-
-    html += `</tbody></table>`;
-    container.innerHTML = html;
-}
 
         function switchView(view) {
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
@@ -990,55 +943,6 @@ requestsBody.innerHTML = sortedRequests.map(r => `
             }
         }
 
-    const PLANNED_SESSIONS = [
-    { id: 1, date: "26.03.2026", time: "18:00", map: "Płońsk" },
-    { id: 2, date: "28.03.2026", time: "20:00", map: "Drobin" }
-];
-
-    // Funkcja odświeżająca widok sesji
-async function refreshSessions() {
-    const container = document.getElementById('session-list'); // upewnij się, że masz taki div w HTML
-    if (!container) return;
-
-    // Pobieramy z bazy kto już jest zapisany
-    const { data: signups } = await sb.from('sesje_zapisy').select('*');
-
-    container.innerHTML = PLANNED_SESSIONS.map(sess => {
-        // Sprawdzamy czy zalogowany user jest już wpisany na tę konkretną datę
-        const isSigned = signups && signups.find(s => s.data_sesji === sess.date && s.username === currentUser.user);
-
-        return `
-            <div class="stat-card" style="border-left: 4px solid ${isSigned ? 'var(--green)' : 'var(--yellow)'}; margin-bottom: 10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <b style="font-size:16px;">Sesja ${sess.date}</b><br>
-                        <small style="color:var(--text-dim)">Godzina: ${sess.time} | Mapa: ${sess.map}</small>
-                    </div>
-                    <div>
-                        ${isSigned 
-                            ? `<button class="btn btn-red" onclick="handleSession('${sess.date}', 'anuluj')">ANULUJ</button>` 
-                            : `<button class="btn btn-green" onclick="handleSession('${sess.date}', 'wpisz')">WPISZ SIĘ</button>`
-                        }
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-}
-
-// Funkcja obsługująca przyciski
-async function handleSession(date, action) {
-    if (action === 'wpisz') {
-        const { error } = await sb.from('sesje_zapisy').insert([
-            { data_sesji: date, username: currentUser.user, status: 'wpisany' }
-        ]);
-        if (!error) showAlert('Sukces', 'Zostałeś wpisany na sesję!', 'success');
-    } else {
-        const { error } = await sb.from('sesje_zapisy').delete().eq('data_sesji', date).eq('username', currentUser.user);
-        if (!error) showAlert('Info', 'Wypisano z sesji.', 'info');
-    }
-    refreshSessions();
-}
         const SHOP_ITEMS = [
             { name: "Solaris Urbino 8,9 LE + Solaris Urbino 18 I PKA Gdynia", price: 0, desc: "Darmowy prezent dla każdego!", isFree: true, password: "vMPKGRYF" },
             { name: "Solaris Urbino III 8,9 MPK Drobin", price: 300, desc: "Dostęp do autobusu z linią osiedlową 252.", password: "SolarkaOsiedle1" },
