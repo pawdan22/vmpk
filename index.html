@@ -472,6 +472,7 @@
             nextRecruitStep(4);
             showQuizQuestion();
         }
+    
 
         function showQuizQuestion() {
             if(currentQuizIndex >= quizQuestions.length) {
@@ -607,6 +608,45 @@
             if(currentUser.isAdmin) refreshAdminPanel();
             resetSessionTimer();
         }
+
+    async function refreshAdminSessionList() {
+    const container = document.getElementById('admin-session-view');
+    if (!container) return;
+
+    // 1. Pobieramy wszystkich zapisanych
+    const { data: allSignups, error } = await sb.from('sesje_zapisy').select('*');
+
+    if (error || !allSignups || allSignups.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-dim);">Nikt jeszcze nie zapisał się na żadną sesję.</p>';
+        return;
+    }
+
+    // 2. Budujemy tabelkę z podziałem na daty
+    let html = `
+        <table style="width:100%; border-collapse: collapse; margin-top:10px; font-size:13px;">
+            <thead>
+                <tr style="border-bottom: 1px solid #333; text-align: left; color: var(--yellow);">
+                    <th style="padding:10px;">Data Sesji</th>
+                    <th style="padding:10px;">Kierowca</th>
+                    <th style="padding:10px;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    allSignups.forEach(s => {
+        html += `
+            <tr style="border-bottom: 1px solid #222;">
+                <td style="padding:10px;"><b>${s.data_sesji}</b></td>
+                <td style="padding:10px;"><i class="fa-solid fa-user"></i> ${s.username}</td>
+                <td style="padding:10px;"><span style="color:var(--green)">● Wpisany</span></td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+}
 
         function switchView(view) {
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
