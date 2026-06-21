@@ -832,66 +832,34 @@
         }
 
        window.onload = async function() {
-    const hash = new URLSearchParams(window.location.hash.substring(1));
-    const token = hash.get('token');
-    const error = hash.get('error');
+            const params = new URLSearchParams(window.location.hash.substring(1));
+            const tokenFromDiscord = params.get('token');
+            const errorFromDiscord = params.get('error');
 
-    if (error) {
-        showAlert('Błąd logowania Discord', decodeURIComponent(error), 'error');
-        window.location.hash = '';
-        return;
-    }
+            if (errorFromDiscord) {
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+                showAlert('Błąd logowania Discord', decodeURIComponent(errorFromDiscord), 'error');
+                return;
+            }
 
-    if (token) {
-        localStorage.setItem('vmpk_discord_token', token);
-        window.location.hash = '';
-    }
+            if (tokenFromDiscord) {
+                localStorage.setItem('vmpk_discord_token', tokenFromDiscord);
+                history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
 
-    const savedToken = localStorage.getItem('vmpk_discord_token');
+            const savedToken = localStorage.getItem('vmpk_discord_token');
+            if (savedToken) {
+                const ok = await loadDiscordSession(savedToken);
+                if (ok) return;
 
-    if (savedToken) {
-        try {
-            const res = await fetch(`${AUTH_API_URL}/api/me`, {
-                headers: {
-                    Authorization: `Bearer ${savedToken}`
-                }
-            });
-
-            if (!res.ok) throw new Error('Token nieważny');
-
-            const me = await res.json();
-
-            currentUser = {
-                user: me.username,
-                pass: '',
-                isAdmin: me.isAdmin
-            };
-
-            localStorage.setItem('vmpk_user', JSON.stringify(currentUser));
-            localStorage.setItem('vmpk_session_start', new Date().getTime());
-
-            showDashboard();
-            return;
-        } catch (err) {
-            localStorage.removeItem('vmpk_discord_token');
-            localStorage.removeItem('vmpk_user');
-            localStorage.removeItem('vmpk_session_start');
-        }
-    }
-
-    const savedUser = localStorage.getItem('vmpk_user');
-    const sessionTime = localStorage.getItem('vmpk_session_start');
-
-    if (savedUser && sessionTime) {
-        const now = new Date().getTime();
-        if (now - sessionTime < 30 * 60 * 1000) {
-            currentUser = JSON.parse(savedUser);
-            showDashboard();
-        } else {
-            handleLogout();
-        }
-    }
-};
+                showAlert(
+                    'Sesja Discord nie działa',
+                    'Logowanie Discord wróciło na stronę, ale panel nie mógł pobrać danych z backendu. Najczęstsza przyczyna: w Render ustaw FRONTEND_URL dokładnie jako https://vmpk-drobin.pl bez ukośnika na końcu, zapisz i zrób redeploy.',
+                    'error'
+                );
+                return;
+            }
+        };
 
         function resetSessionTimer() {
             if (currentUser) {
