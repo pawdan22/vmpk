@@ -310,12 +310,9 @@
 
             <div id="view-shop" class="view-section">
                 <h1>Sklep</h1>
-                <div class="stat-card" style="margin-bottom: 20px;">
-                    <h3>Twoje dostępne KM</h3>
-                    <p id="shop-km" style="color:var(--yellow)">0.0 km</p>
+                <div class="stat-card" style="text-align:center; padding:40px;">
+                    <h2>Sklep został przeniesiony na Discord.</h2>
                 </div>
-                <div id="shop-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
-                    </div>
             </div>
 
             <div id="view-admin" class="view-section">
@@ -616,7 +613,7 @@
             document.getElementById('nav-' + view).classList.add('active');
             if(view === 'admin') refreshAdminPanel();
             if(view === 'report') fillReportSelect();
-            if(view === 'shop') refreshShop();
+            // if(view === 'shop') refreshShop();
             if(view === 'schedule') { refreshUserSchedule(); toggleScheduleView('list'); }
             if(view === 'home') { checkTodayDuty(); refreshData(); }
         }
