@@ -423,15 +423,13 @@
     <section id="login-page">
         <div class="login-box">
             <img src="logo.png" alt="VMPK Logo" class="login-logo">
-            <div class="input-group">
-                <label>użytkownik</label>
-                <input type="text" id="username" placeholder="wpisz login...">
-            </div>
-            <div class="input-group">
-                <label>hasło</label>
-                <input type="password" id="password" placeholder="••••">
-            </div>
-            <button class="login-btn btn" onclick="handleLogin()">Zaloguj Się</button>
+            <h2 style="margin-top:0; color:var(--yellow);">Panel Kierowcy</h2>
+            <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom:20px;">
+                Logowanie odbywa się przez Discord. Dostęp mają tylko osoby z rolą vmpK driver.
+            </p>
+            <button class="login-btn btn" onclick="handleLogin()" style="background:#5865F2; justify-content:center;">
+                <i class="fa-brands fa-discord"></i> Zaloguj przez Discord
+            </button>
             <span class="join-link" onclick="checkRecruitmentStatus()">Dołącz do nas!</span>
         </div>
     </section>
@@ -665,6 +663,10 @@
 <script>
         const sb = window.supabase.createClient('https://rgkpsalluqhncepieuht.supabase.co', 'sb_publishable_UVLQNk4RSTuFZsjTJilDeA_M62vfl5Q');
 
+        // ADRES TWOJEGO BACKENDU DISCORD AUTH
+        // Po wrzuceniu backendu na Render/Vercel podmień ten adres, np. https://vmpk-auth.onrender.com
+        const AUTH_API_URL = 'https://TWOJ-BACKEND.onrender.com';
+
         const USERS = [
             { user: "pawdan", pass: "admin123", isAdmin: true },
             { user: "oloszz", pass: "drobin2026", isAdmin: true },
@@ -829,15 +831,13 @@
             document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); 
         }
 
-        window.onload = function() {
-            const savedUser = localStorage.getItem('vmpk_user');
-            const sessionTime = localStorage.getItem('vmpk_session_start');
-            if (savedUser && sessionTime) {
-                const now = new Date().getTime();
-                if (now - sessionTime < 30 * 60 * 1000) {
-                    currentUser = JSON.parse(savedUser);
-                    showDashboard();
-                } else { handleLogout(); }
+        window.onload = async function() {
+            await handleDiscordReturn();
+
+            const savedToken = localStorage.getItem('vmpk_discord_token');
+            if (savedToken) {
+                const ok = await loadDiscordSession(savedToken);
+                if (ok) return;
             }
         };
 
@@ -849,19 +849,54 @@
             }
         }
 
-        function handleLogin() {
-            const u = document.getElementById('username').value;
-            const p = document.getElementById('password').value;
-            const foundUser = USERS.find(item => item.user === u && item.pass === p);
-            if(foundUser) {
-                currentUser = foundUser;
+        async function handleDiscordReturn() {
+            const hash = new URLSearchParams(window.location.hash.replace('#', ''));
+            const token = hash.get('token');
+            const error = hash.get('error');
+
+            if (error) {
+                history.replaceState(null, '', window.location.pathname);
+                showAlert('Brak dostępu', decodeURIComponent(error), 'error');
+                return;
+            }
+
+            if (token) {
+                localStorage.setItem('vmpk_discord_token', token);
+                history.replaceState(null, '', window.location.pathname);
+                await loadDiscordSession(token);
+            }
+        }
+
+        async function loadDiscordSession(token) {
+            try {
+                const res = await fetch(`${AUTH_API_URL}/api/me`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Brak autoryzacji');
+                const user = await res.json();
+                currentUser = {
+                    user: user.username,
+                    discordId: user.id,
+                    avatar: user.avatar,
+                    isAdmin: user.isAdmin === true
+                };
                 localStorage.setItem('vmpk_user', JSON.stringify(currentUser));
                 localStorage.setItem('vmpk_session_start', new Date().getTime());
                 showDashboard();
-            } else { showAlert('Błąd', 'Nieprawidłowy login lub hasło!', 'error'); }
+                return true;
+            } catch (err) {
+                localStorage.removeItem('vmpk_discord_token');
+                localStorage.removeItem('vmpk_user');
+                return false;
+            }
+        }
+
+        function handleLogin() {
+            window.location.href = `${AUTH_API_URL}/auth/discord`;
         }
 
         function handleLogout() {
+            localStorage.removeItem('vmpk_discord_token');
             localStorage.removeItem('vmpk_user');
             localStorage.removeItem('vmpk_session_start');
             location.reload();
@@ -871,6 +906,7 @@
             document.getElementById('login-page').style.display = 'none';
             document.getElementById('dashboard').style.display = 'grid';
             document.getElementById('display-user').innerText = currentUser.user;
+            document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
             if(currentUser.isAdmin) {
                 document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'flex');
                 fillAdminSelect();
