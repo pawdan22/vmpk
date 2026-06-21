@@ -378,6 +378,37 @@
             nav li { padding: 12px; }
         }
 
+    
+
+        /* ===== Nowa rekrutacja + bramka egzaminu ===== */
+        .recruitment-box {
+            width: min(980px, 94vw) !important;
+            text-align: left !important;
+        }
+        .rec-hero {
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            gap: 24px;
+            margin-bottom: 24px;
+            align-items: stretch;
+        }
+        .rec-panel {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 24px;
+        }
+        .rec-panel h2, .rec-panel h3 { margin-top: 0; }
+        .rec-rules { counter-reset: recRule; display: grid; gap: 10px; margin: 0; padding: 0; }
+        .rec-rules li { list-style: none; display: flex; gap: 10px; color: var(--text-dim); line-height: 1.45; }
+        .rec-rules li::before { counter-increment: recRule; content: counter(recRule); min-width: 24px; height: 24px; border-radius: 999px; background: rgba(255,211,77,0.14); color: var(--yellow); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; }
+        .rec-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .rec-form-grid .wide { grid-column: 1 / -1; }
+        .rec-note { color: #ff5e67; font-weight: 800; line-height: 1.5; background: rgba(181,31,42,0.09); border: 1px solid rgba(181,31,42,0.24); padding: 14px; border-radius: 12px; }
+        .exam-gate-card { width: min(720px, 92vw); background: linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018)), var(--card-bg); border: 1px solid var(--border); border-radius: 22px; padding: 34px; box-shadow: var(--shadow); text-align: center; animation: popIn .45s ease both; }
+        #exam-gate-page { display:none; min-height:100vh; align-items:center; justify-content:center; padding:30px; background: radial-gradient(circle at top, rgba(255,211,77,0.12), transparent 42%), linear-gradient(135deg, #050506, #111116); }
+        @media (max-width: 850px) { .rec-hero, .rec-form-grid { grid-template-columns: 1fr; } }
+
     </style>
 </head>
 <body onclick="resetSessionTimer()">
@@ -425,7 +456,7 @@
             <img src="logo.png" alt="VMPK Logo" class="login-logo">
             <h2 style="margin-top:0; color:var(--yellow);">Panel Kierowcy</h2>
             <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom:20px;">
-                Logowanie odbywa się przez Discord. W razie problemów z logowaniem prosimy o kontakt na discordzie.
+                Logowanie odbywa się przez Discord. Dostęp mają tylko osoby z rolą vmpK driver.
             </p>
             <button class="login-btn btn" onclick="handleLogin()" style="background:#5865F2; justify-content:center;">
                 <i class="fa-brands fa-discord"></i> Zaloguj przez Discord
@@ -436,38 +467,60 @@
 
     <section id="recruitment-page">
         <div class="recruitment-box">
-            <h2 id="recruit-title" style="color:var(--yellow); margin-bottom: 20px;">Rekrutacja vMPK</h2>
-            
-            <div id="recruit-step-1" class="recruit-step active">
-                <h3 style="font-size: 14px; margin-bottom: 20px;">Uzupełnij swoje dane:</h3>
-                <div class="input-group"><label>Nazwa użytkownika z Discord</label><input type="text" id="rec-nick"></div>
-                <div class="input-group"><label>Data urodzenia</label><input type="date" id="rec-birth"></div>
-                <div class="input-group"><label>Adres Email</label><input type="email" id="rec-email"></div>
-                <button class="btn btn-accent" style="width:100%; justify-content:center" onclick="nextRecruitStep(2)">Dalej</button>
+            <div class="rec-hero">
+                <div class="rec-panel">
+                    <h2 id="recruit-title" style="color:var(--yellow); margin-bottom: 12px;">Rekrutacja vMPK Drobin</h2>
+                    <p style="color:var(--text-dim); line-height:1.6; margin-bottom:0;">
+                        Chcesz sprawdzić się za kierownicą autobusu? Wypełnij formularz, a zarząd rozpatrzy Twoje podanie.
+                        Po przyjęciu otrzymasz dalsze informacje oraz dostęp do egzaminu państwowego.
+                    </p>
+                </div>
+                <div class="rec-panel">
+                    <h3 style="color:var(--yellow);">Zasady rekrutacji</h3>
+                    <ol class="rec-rules">
+                        <li>Podanie może złożyć każdy użytkownik zainteresowany pracą kierowcy.</li>
+                        <li>Po akceptacji kandydat przechodzi etap egzaminu państwowego.</li>
+                        <li>Dostęp do panelu zostanie nadany dopiero po ręcznym zatwierdzeniu zdania egzaminu.</li>
+                        <li>Rekrutacja jest formą zabawy i nie jest prawdziwą umową o pracę.</li>
+                    </ol>
+                </div>
             </div>
 
-            <div id="recruit-step-2" class="recruit-step">
-                <h3 style="color:var(--accent)">Regulamin</h3>
-                <p style="font-size: 13px; line-height: 1.6; color:#ccc;">
-                    Rekrutacja składa się z dwóch części: pytań "O sobie" oraz testu z przepisów ruchu drogowego.<br><br>
-                    Na test drogowy będziesz mieć limit 30 sekund na pytanie.<br><br>
-                    Powodzenia!
-                </p>
-                <button class="btn btn-accent" style="width:100%; justify-content:center; margin-top:20px;" onclick="nextRecruitStep(3)">Zaczynamy!</button>
+            <div class="rec-note">
+                Uczestnictwo w vMPK Drobin jest wyłącznie formą zabawy i rozrywki. Nie należy traktować tego jako prawdziwej działalności gospodarczej ani realnej pracy.
             </div>
 
-            <div id="recruit-step-3" class="recruit-step">
-                <div class="input-group"><label>1. Czy pracowałeś/aś w vfirmie? (Jakiej?)</label><textarea id="rec-q1"></textarea></div>
-                <div class="input-group"><label>2. Twoja dyspozycyjność w tygodniu?</label><textarea id="rec-q2"></textarea></div>
-                <div class="input-group"><label>3. Twoje ulubione mapy/gry w Roblox?</label><textarea id="rec-q3"></textarea></div>
-                <div class="input-group"><label>4. Napisz kilka słów o sobie.</label><textarea id="rec-q4"></textarea></div>
-                <div class="input-group"><label>5. Dlaczego chcesz do nas dołączyć?</label><textarea id="rec-q5"></textarea></div>
-                <button class="btn btn-accent" style="width:100%; justify-content:center" onclick="startQuiz()">Przejdź do testu drogowego</button>
+            <div class="rec-panel" style="margin-top:20px;">
+                <h2 style="margin-bottom:18px;">Powiedz coś o sobie</h2>
+                <div class="rec-form-grid">
+                    <div class="input-group"><label>Imię</label><input type="text" id="rec-first-name"></div>
+                    <div class="input-group"><label>Nazwisko</label><input type="text" id="rec-last-name"></div>
+                    <div class="input-group"><label>Nazwa użytkownika Discord</label><input type="text" id="rec-nick" placeholder="np. pawdan22"></div>
+                    <div class="input-group"><label>Adres e-mail</label><input type="email" id="rec-email"></div>
+                    <div class="input-group"><label>Data urodzenia</label><input type="date" id="rec-birth"></div>
+                    <div class="input-group"><label>Dyspozycyjność</label><input type="text" id="rec-availability" placeholder="np. weekendy, wieczory"></div>
+                    <div class="input-group wide"><label>Doświadczenie z OMSI / prowadzeniem autobusów</label><textarea id="rec-experience" rows="3"></textarea></div>
+                    <div class="input-group wide"><label>Czy pracowałeś kiedyś w vFirmie?</label><textarea id="rec-vfirm" rows="3"></textarea></div>
+                    <div class="input-group wide"><label>Dlaczego chcesz do nas dołączyć?</label><textarea id="rec-why" rows="4"></textarea></div>
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:10px;">
+                    <button class="btn" style="background:#333" onclick="location.reload()">Cofnij</button>
+                    <button class="btn btn-accent" onclick="finishRecruitment()"><i class="fa-solid fa-paper-plane"></i> Wyślij podanie</button>
+                </div>
             </div>
+        </div>
+    </section>
 
-            <div id="recruit-step-4" class="recruit-step">
-                <span id="recruit-timer">30s</span>
-                <div id="quiz-container"></div>
+    <section id="exam-gate-page">
+        <div class="exam-gate-card">
+            <i class="fa-solid fa-clipboard-check" style="font-size:58px; color:var(--yellow); margin-bottom:18px;"></i>
+            <h1 style="margin-bottom:12px;">Najpierw musisz zdać egzamin państwowy</h1>
+            <p style="color:var(--text-dim); line-height:1.6;">
+                Twoje podanie zostało przyjęte, ale dostęp do panelu kierowcy zostanie odblokowany dopiero po ręcznym zatwierdzeniu zdania egzaminu przez zarząd.
+            </p>
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:24px;">
+                <a class="btn btn-yellow" href="https://pawdan22.github.io/egzamin-prafko/" target="_blank" style="text-decoration:none;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Przejdź do egzaminu</a>
+                <button class="btn btn-accent" onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i> Wyloguj</button>
             </div>
         </div>
     </section>
@@ -775,21 +828,47 @@
         }
 
         async function finishRecruitment() {
+            const firstName = document.getElementById('rec-first-name').value.trim();
+            const lastName = document.getElementById('rec-last-name').value.trim();
+            const nick = document.getElementById('rec-nick').value.trim();
+            const birth = document.getElementById('rec-birth').value;
+            const email = document.getElementById('rec-email').value.trim();
+            const availability = document.getElementById('rec-availability').value.trim();
+            const experience = document.getElementById('rec-experience').value.trim();
+            const vfirm = document.getElementById('rec-vfirm').value.trim();
+            const why = document.getElementById('rec-why').value.trim();
+
+            if(!firstName || !lastName || !nick || !birth || !email || !availability || !experience || !why) {
+                showAlert('Brak danych', 'Uzupełnij wszystkie wymagane pola formularza.', 'error');
+                return;
+            }
+
             const payload = {
-                nick: document.getElementById('rec-nick').value,
-                birth: document.getElementById('rec-birth').value,
-                email: document.getElementById('rec-email').value,
-                q_sobie: [
-                    document.getElementById('rec-q1').value,
-                    document.getElementById('rec-q2').value,
-                    document.getElementById('rec-q3').value,
-                    document.getElementById('rec-q4').value,
-                    document.getElementById('rec-q5').value
-                ],
-                quiz: quizAnswers
+                nick,
+                birth,
+                email,
+                q_sobie: {
+                    firstName,
+                    lastName,
+                    availability,
+                    experience,
+                    vfirm,
+                    why
+                },
+                quiz: {
+                    status: 'oczekuje',
+                    examPassed: false,
+                    createdAt: new Date().toISOString()
+                }
             };
-            await sb.from('rekrutacja').insert([payload]);
-            showAlert('Sukces', 'Zgłoszenie wysłane! Czekaj na info.', 'success');
+
+            const { error } = await sb.from('rekrutacja').insert([payload]);
+            if(error) {
+                showAlert('Błąd', 'Nie udało się wysłać podania: ' + error.message, 'error');
+                return;
+            }
+
+            showAlert('Podanie wysłane', 'Twoje podanie zostało wysłane do zarządu. Czekaj na informację zwrotną.', 'success');
             setTimeout(() => location.reload(), 2500);
         }
 
@@ -832,34 +911,68 @@
         }
 
        window.onload = async function() {
-            const params = new URLSearchParams(window.location.hash.substring(1));
-            const tokenFromDiscord = params.get('token');
-            const errorFromDiscord = params.get('error');
+    const hash = new URLSearchParams(window.location.hash.substring(1));
+    const token = hash.get('token');
+    const error = hash.get('error');
 
-            if (errorFromDiscord) {
-                history.replaceState(null, '', window.location.pathname + window.location.search);
-                showAlert('Błąd logowania Discord', decodeURIComponent(errorFromDiscord), 'error');
-                return;
-            }
+    if (error) {
+        showAlert('Błąd logowania Discord', decodeURIComponent(error), 'error');
+        window.location.hash = '';
+        return;
+    }
 
-            if (tokenFromDiscord) {
-                localStorage.setItem('vmpk_discord_token', tokenFromDiscord);
-                history.replaceState(null, '', window.location.pathname + window.location.search);
-            }
+    if (token) {
+        localStorage.setItem('vmpk_discord_token', token);
+        window.location.hash = '';
+    }
 
-            const savedToken = localStorage.getItem('vmpk_discord_token');
-            if (savedToken) {
-                const ok = await loadDiscordSession(savedToken);
-                if (ok) return;
+    const savedToken = localStorage.getItem('vmpk_discord_token');
 
-                showAlert(
-                    'Sesja Discord nie działa',
-                    'Logowanie Discord wróciło na stronę, ale panel nie mógł pobrać danych z backendu. Najczęstsza przyczyna: w Render ustaw FRONTEND_URL dokładnie jako https://vmpk-drobin.pl bez ukośnika na końcu, zapisz i zrób redeploy.',
-                    'error'
-                );
-                return;
-            }
-        };
+    if (savedToken) {
+        try {
+            const res = await fetch(`${AUTH_API_URL}/api/me`, {
+                headers: {
+                    Authorization: `Bearer ${savedToken}`
+                }
+            });
+
+            if (!res.ok) throw new Error('Token nieważny');
+
+            const me = await res.json();
+
+            currentUser = {
+                user: me.username,
+                pass: '',
+                discordId: me.id,
+                discordUsername: me.discordUsername,
+                isAdmin: me.isAdmin
+            };
+
+            localStorage.setItem('vmpk_user', JSON.stringify(currentUser));
+            localStorage.setItem('vmpk_session_start', new Date().getTime());
+
+            await proceedAfterLogin();
+            return;
+        } catch (err) {
+            localStorage.removeItem('vmpk_discord_token');
+            localStorage.removeItem('vmpk_user');
+            localStorage.removeItem('vmpk_session_start');
+        }
+    }
+
+    const savedUser = localStorage.getItem('vmpk_user');
+    const sessionTime = localStorage.getItem('vmpk_session_start');
+
+    if (savedUser && sessionTime) {
+        const now = new Date().getTime();
+        if (now - sessionTime < 30 * 60 * 1000) {
+            currentUser = JSON.parse(savedUser);
+            await proceedAfterLogin();
+        } else {
+            handleLogout();
+        }
+    }
+};
 
         function resetSessionTimer() {
             if (currentUser) {
@@ -897,12 +1010,13 @@
                 currentUser = {
                     user: user.username,
                     discordId: user.id,
+                    discordUsername: user.discordUsername,
                     avatar: user.avatar,
                     isAdmin: user.isAdmin === true
                 };
                 localStorage.setItem('vmpk_user', JSON.stringify(currentUser));
                 localStorage.setItem('vmpk_session_start', new Date().getTime());
-                showDashboard();
+                await proceedAfterLogin();
                 return true;
             } catch (err) {
                 localStorage.removeItem('vmpk_discord_token');
@@ -920,6 +1034,44 @@
             localStorage.removeItem('vmpk_user');
             localStorage.removeItem('vmpk_session_start');
             location.reload();
+        }
+
+
+        function normalizeDiscordName(value) {
+            return (value || '').toString().trim().toLowerCase().replace(/^@/, '');
+        }
+
+        function getRecruitmentStatus(rec) {
+            const meta = rec && rec.quiz;
+            if(meta && !Array.isArray(meta) && typeof meta === 'object') return meta;
+            return { status: 'stare_podanie', examPassed: true };
+        }
+
+        async function findMyRecruitmentRecord() {
+            if(!currentUser || currentUser.isAdmin) return null;
+            const { data } = await sb.from('rekrutacja').select('*').order('id', { ascending: false });
+            if(!data) return null;
+            const names = [currentUser.discordUsername, currentUser.user].map(normalizeDiscordName).filter(Boolean);
+            return data.find(r => names.includes(normalizeDiscordName(r.nick))) || null;
+        }
+
+        async function proceedAfterLogin() {
+            const rec = await findMyRecruitmentRecord();
+            if(rec) {
+                const st = getRecruitmentStatus(rec);
+                if(st.status === 'przyjety' && st.examPassed !== true) {
+                    showExamGate();
+                    return;
+                }
+            }
+            showDashboard();
+        }
+
+        function showExamGate() {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('recruitment-page').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('exam-gate-page').style.display = 'flex';
         }
 
         function showDashboard() {
@@ -1203,15 +1355,28 @@ requestsBody.innerHTML = sortedRequests.map(r => `
             const { data: recs } = await sb.from('rekrutacja').select('*').order('id', { ascending: false });
             const recBody = document.getElementById('admin-recruitment-body');
             if(recBody) {
-                recBody.innerHTML = recs && recs.length ? recs.map(r => `
+                recBody.innerHTML = recs && recs.length ? recs.map(r => {
+                    const q = r.q_sobie || {};
+                    const meta = getRecruitmentStatus(r);
+                    const isObj = q && !Array.isArray(q) && typeof q === 'object';
+                    const about = isObj
+                        ? `Imię i nazwisko: ${q.firstName || ''} ${q.lastName || ''}\nDyspozycyjność: ${q.availability || 'brak'}\nDoświadczenie: ${q.experience || 'brak'}\nvFirma: ${q.vfirm || 'brak'}\nDlaczego: ${q.why || 'brak'}`
+                        : (Array.isArray(q) ? q.join('\n') : 'brak');
+                    const statusText = meta.examPassed ? 'EGZAMIN ZDANY' : (meta.status === 'przyjety' ? 'PRZYJĘTY - CZEKA NA EGZAMIN' : 'OCZEKUJE');
+                    const statusColor = meta.examPassed ? 'var(--green)' : (meta.status === 'przyjety' ? 'var(--yellow)' : 'var(--text-dim)');
+                    return `
                     <tr>
-                        <td style="color:var(--yellow)">${r.nick}</td>
-                        <td>${r.birth}</td>
-                        <td style="font-size:10px; max-width:300px; white-space: pre-wrap;">${r.q_sobie ? r.q_sobie.join('\n') : 'brak'}</td>
-                        <td>${r.quiz ? r.quiz.filter((ans, idx) => ans === quizQuestions[idx]?.correct).length : 0}/5</td>
-                        <td><button class="btn btn-accent" style="padding:5px 10px; font-size:10px" onclick="deleteRec(${r.id})">USUŃ</button></td>
-                    </tr>
-                `).join('') : '<tr><td colspan="5">Brak nowych podań</td></tr>';
+                        <td style="color:var(--yellow)">${r.nick}<br><small style="color:var(--text-dim)">${r.email || ''}</small></td>
+                        <td>${r.birth || '---'}</td>
+                        <td style="font-size:10px; max-width:360px; white-space: pre-wrap;">${about}</td>
+                        <td><span class="badge" style="background:${statusColor}; color:#111;">${statusText}</span></td>
+                        <td style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <button class="btn btn-green" style="padding:5px 10px; font-size:10px" onclick="acceptRecruitment(${r.id})">PRZESZEDŁ</button>
+                            <button class="btn btn-yellow" style="padding:5px 10px; font-size:10px" onclick="markExamPassed(${r.id})">ZDAŁ EGZAMIN</button>
+                            <button class="btn btn-accent" style="padding:5px 10px; font-size:10px" onclick="deleteRec(${r.id})">USUŃ</button>
+                        </td>
+                    </tr>`;
+                }).join('') : '<tr><td colspan="5">Brak nowych podań</td></tr>';
             }
         }
 
@@ -1268,6 +1433,23 @@ requestsBody.innerHTML = sortedRequests.map(r => `
                     `<tr style="border-bottom: 1px solid var(--border); height: 50px;"><td>${n} ${i===0?'👑':''}</td><td><b>${k.toFixed(1)} km</b></td></tr>`
                 ).join('');
             }
+        }
+
+
+        async function acceptRecruitment(id) {
+            const { error } = await sb.from('rekrutacja').update({
+                quiz: { status: 'przyjety', examPassed: false, acceptedAt: new Date().toISOString() }
+            }).eq('id', id);
+            if(error) showAlert('Błąd', 'Nie udało się zaakceptować podania: ' + error.message, 'error');
+            else { showAlert('Rekrutacja', 'Podanie oznaczone jako przyjęte. Teraz ręcznie wyślij maila i nadaj rolę Discord, jeśli trzeba.', 'success'); refreshAdminPanel(); }
+        }
+
+        async function markExamPassed(id) {
+            const { error } = await sb.from('rekrutacja').update({
+                quiz: { status: 'przyjety', examPassed: true, examPassedAt: new Date().toISOString() }
+            }).eq('id', id);
+            if(error) showAlert('Błąd', 'Nie udało się zatwierdzić egzaminu: ' + error.message, 'error');
+            else { showAlert('Egzamin', 'Egzamin oznaczony jako zdany. Użytkownik otrzyma dostęp do panelu po zalogowaniu.', 'success'); refreshAdminPanel(); }
         }
 
         async function deleteRec(id) {
