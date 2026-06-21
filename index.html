@@ -831,15 +831,67 @@
             document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); 
         }
 
-        window.onload = async function() {
-            await handleDiscordReturn();
+       window.onload = async function() {
+    const hash = new URLSearchParams(window.location.hash.substring(1));
+    const token = hash.get('token');
+    const error = hash.get('error');
 
-            const savedToken = localStorage.getItem('vmpk_discord_token');
-            if (savedToken) {
-                const ok = await loadDiscordSession(savedToken);
-                if (ok) return;
-            }
-        };
+    if (error) {
+        showAlert('Błąd logowania Discord', decodeURIComponent(error), 'error');
+        window.location.hash = '';
+        return;
+    }
+
+    if (token) {
+        localStorage.setItem('vmpk_discord_token', token);
+        window.location.hash = '';
+    }
+
+    const savedToken = localStorage.getItem('vmpk_discord_token');
+
+    if (savedToken) {
+        try {
+            const res = await fetch(`${AUTH_API_URL}/api/me`, {
+                headers: {
+                    Authorization: `Bearer ${savedToken}`
+                }
+            });
+
+            if (!res.ok) throw new Error('Token nieważny');
+
+            const me = await res.json();
+
+            currentUser = {
+                user: me.username,
+                pass: '',
+                isAdmin: me.isAdmin
+            };
+
+            localStorage.setItem('vmpk_user', JSON.stringify(currentUser));
+            localStorage.setItem('vmpk_session_start', new Date().getTime());
+
+            showDashboard();
+            return;
+        } catch (err) {
+            localStorage.removeItem('vmpk_discord_token');
+            localStorage.removeItem('vmpk_user');
+            localStorage.removeItem('vmpk_session_start');
+        }
+    }
+
+    const savedUser = localStorage.getItem('vmpk_user');
+    const sessionTime = localStorage.getItem('vmpk_session_start');
+
+    if (savedUser && sessionTime) {
+        const now = new Date().getTime();
+        if (now - sessionTime < 30 * 60 * 1000) {
+            currentUser = JSON.parse(savedUser);
+            showDashboard();
+        } else {
+            handleLogout();
+        }
+    }
+};
 
         function resetSessionTimer() {
             if (currentUser) {
