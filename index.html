@@ -1478,7 +1478,7 @@ requestsBody.innerHTML = sortedRequests.map(r => `
                         <td style="color:var(--yellow)">${r.nick}<br><small style="color:var(--text-dim)">${r.email || ''}</small></td>
                         <td>${r.birth || '---'}</td>
                         <td style="font-size:10px; max-width:360px; white-space: pre-wrap;">${about}</td>
-                        <td><span class="badge" style="background:${statusColor}; color:#111;">${statusText}</span></td>
+                        <td><span id="rec-status-${r.id}" class="badge" style="background:${statusColor}; color:#111;">${statusText}</span></td>
                         <td style="display:flex; gap:6px; flex-wrap:wrap;">
                             <button class="btn btn-green" style="padding:5px 10px; font-size:10px" onclick="acceptRecruitment(${r.id})">PRZESZEDŁ</button>
                             <button class="btn btn-yellow" style="padding:5px 10px; font-size:10px" onclick="markExamPassed(${r.id})">ZDAŁ EGZAMIN</button>
@@ -1569,8 +1569,17 @@ requestsBody.innerHTML = sortedRequests.map(r => `
                 return;
             }
 
+            const badge = document.getElementById(`rec-status-${id}`);
+            if (badge) {
+                badge.innerText = 'PRZESZEDŁ - CZEKA NA EGZAMIN';
+                badge.style.background = 'var(--yellow)';
+                badge.style.color = '#111';
+            }
+
             showAlert('Rekrutacja', `Zapisano PRZESZEDŁ dla: ${data.nick}. Kandydat po zalogowaniu Discordem przejdzie do egzaminu, jeśli nick z podania zgadza się z Discord username.`, 'success');
-            await refreshAdminPanel();
+
+            // Odświeżamy listę po chwili, żeby modal zdążył się pokazać i żeby nie wyglądało, że status dalej wisi na OCZEKUJE.
+            setTimeout(() => refreshAdminPanel(), 300);
         }
 
         async function markExamPassed(id) {
