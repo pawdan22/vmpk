@@ -1553,19 +1553,22 @@ requestsBody.innerHTML = sortedRequests.map(r => `
                 acceptedBy: currentUser ? (currentUser.discordUsername || currentUser.user || 'admin') : 'admin'
             };
 
+            // Nie używamy .single(), bo Supabase/PostgREST potrafi wtedy zwrócić błąd
+            // „Cannot coerce the result to a single JSON object”, mimo że zapis się wykonuje.
             const { data, error } = await sb.from('rekrutacja')
                 .update({ quiz: payload })
                 .eq('id', id)
-                .select('id,nick,quiz')
-                .single();
+                .select('id,nick,quiz');
 
             if(error) {
                 showAlert('Błąd', 'Nie udało się zapisać statusu PRZESZEDŁ w Supabase: ' + error.message, 'error');
                 return;
             }
 
-            if(!data || !data.quiz || data.quiz.status !== 'przeszedl') {
-                showAlert('Błąd', 'Supabase nie potwierdził zapisu statusu PRZESZEDŁ. Odśwież panel i sprawdź RLS/prawa zapisu.', 'error');
+            const row = Array.isArray(data) ? data[0] : data;
+
+            if(!row || !row.quiz || row.quiz.status !== 'przeszedl') {
+                showAlert('Błąd', 'Supabase nie potwierdził zapisu statusu PRZESZEDŁ. Sprawdź RLS/prawa zapisu albo czy rekord nadal istnieje.', 'error');
                 return;
             }
 
@@ -1576,18 +1579,44 @@ requestsBody.innerHTML = sortedRequests.map(r => `
                 badge.style.color = '#111';
             }
 
-            showAlert('Rekrutacja', `Zapisano PRZESZEDŁ dla: ${data.nick}. Kandydat po zalogowaniu Discordem przejdzie do egzaminu, jeśli nick z podania zgadza się z Discord username.`, 'success');
-
-            // Odświeżamy listę po chwili, żeby modal zdążył się pokazać i żeby nie wyglądało, że status dalej wisi na OCZEKUJE.
+            showAlert('Rekrutacja', `Zapisano PRZESZEDŁ dla: ${row.nick}. Kandydat po zalogowaniu Discordem przejdzie do egzaminu, jeśli nick z podania zgadza się z Discord username.`, 'success');
             setTimeout(() => refreshAdminPanel(), 300);
         }
 
         async function markExamPassed(id) {
-            const { error } = await sb.from('rekrutacja').update({
-                quiz: { status: 'przyjety', examPassed: true, examPassedAt: new Date().toISOString() }
-            }).eq('id', id);
-            if(error) showAlert('Błąd', 'Nie udało się zatwierdzić egzaminu: ' + error.message, 'error');
-            else { showAlert('Egzamin', 'Egzamin oznaczony jako zdany. Użytkownik otrzyma dostęp do panelu po zalogowaniu.', 'success'); refreshAdminPanel(); }
+            const payload = {
+                status: 'przyjety',
+                examPassed: true,
+                examPassedAt: new Date().toISOString(),
+                acceptedBy: currentUser ? (currentUser.discordUsername || currentUser.user || 'admin') : 'admin'
+            };
+
+            const { data, error } = await sb.from('rekrutacja')
+                .update({ quiz: payload })
+                .eq('id', id)
+                .select('id,nick,quiz');
+
+            if(error) {
+                showAlert('Błąd', 'Nie udało się zatwierdzić egzaminu: ' + error.message, 'error');
+                return;
+            }
+
+            const row = Array.isArray(data) ? data[0] : data;
+
+            if(!row || !row.quiz || row.quiz.examPassed !== true) {
+                showAlert('Błąd', 'Supabase nie potwierdził zapisu zdania egzaminu. Sprawdź RLS/prawa zapisu albo czy rekord nadal istnieje.', 'error');
+                return;
+            }
+
+            const badge = document.getElementById(`rec-status-${id}`);
+            if (badge) {
+                badge.innerText = 'EGZAMIN ZDANY';
+                badge.style.background = 'var(--green)';
+                badge.style.color = '#111';
+            }
+
+            showAlert('Egzamin', `Egzamin oznaczony jako zdany dla: ${row.nick}. Użytkownik otrzyma dostęp do panelu po zalogowaniu.`, 'success');
+            setTimeout(() => refreshAdminPanel(), 300);
         }
 
         async function deleteRec(id) {
