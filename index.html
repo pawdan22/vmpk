@@ -1470,8 +1470,9 @@ requestsBody.innerHTML = sortedRequests.map(r => `
                     const about = isObj
                         ? `Imię i nazwisko: ${q.firstName || ''} ${q.lastName || ''}\nDyspozycyjność: ${q.availability || 'brak'}\nDoświadczenie: ${q.experience || 'brak'}\nvFirma: ${q.vfirm || 'brak'}\nDlaczego: ${q.why || 'brak'}`
                         : (Array.isArray(q) ? q.join('\n') : 'brak');
-                    const statusText = meta.examPassed ? 'EGZAMIN ZDANY' : (meta.status === 'przyjety' ? 'PRZYJĘTY - CZEKA NA EGZAMIN' : 'OCZEKUJE');
-                    const statusColor = meta.examPassed ? 'var(--green)' : (meta.status === 'przyjety' ? 'var(--yellow)' : 'var(--text-dim)');
+                    const acceptedForExam = isRecruitmentAccepted(meta) && meta.examPassed !== true;
+                    const statusText = meta.examPassed ? 'EGZAMIN ZDANY' : (acceptedForExam ? 'PRZESZEDŁ - CZEKA NA EGZAMIN' : 'OCZEKUJE');
+                    const statusColor = meta.examPassed ? 'var(--green)' : (acceptedForExam ? 'var(--yellow)' : 'var(--text-dim)');
                     return `
                     <tr>
                         <td style="color:var(--yellow)">${r.nick}<br><small style="color:var(--text-dim)">${r.email || ''}</small></td>
@@ -1545,11 +1546,31 @@ requestsBody.innerHTML = sortedRequests.map(r => `
 
 
         async function acceptRecruitment(id) {
-            const { error } = await sb.from('rekrutacja').update({
-                quiz: { status: 'przyjety', examPassed: false, acceptedAt: new Date().toISOString() }
-            }).eq('id', id);
-            if(error) showAlert('Błąd', 'Nie udało się zaakceptować podania: ' + error.message, 'error');
-            else { showAlert('Rekrutacja', 'Podanie oznaczone jako przyjęte. Kandydat po zalogowaniu Discordem przejdzie do egzaminu, jeśli nick z podania zgadza się z jego Discord username.', 'success'); refreshAdminPanel(); }
+            const payload = {
+                status: 'przeszedl',
+                examPassed: false,
+                acceptedAt: new Date().toISOString(),
+                acceptedBy: currentUser ? (currentUser.discordUsername || currentUser.user || 'admin') : 'admin'
+            };
+
+            const { data, error } = await sb.from('rekrutacja')
+                .update({ quiz: payload })
+                .eq('id', id)
+                .select('id,nick,quiz')
+                .single();
+
+            if(error) {
+                showAlert('Błąd', 'Nie udało się zapisać statusu PRZESZEDŁ w Supabase: ' + error.message, 'error');
+                return;
+            }
+
+            if(!data || !data.quiz || data.quiz.status !== 'przeszedl') {
+                showAlert('Błąd', 'Supabase nie potwierdził zapisu statusu PRZESZEDŁ. Odśwież panel i sprawdź RLS/prawa zapisu.', 'error');
+                return;
+            }
+
+            showAlert('Rekrutacja', `Zapisano PRZESZEDŁ dla: ${data.nick}. Kandydat po zalogowaniu Discordem przejdzie do egzaminu, jeśli nick z podania zgadza się z Discord username.`, 'success');
+            await refreshAdminPanel();
         }
 
         async function markExamPassed(id) {
