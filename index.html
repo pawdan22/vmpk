@@ -1055,27 +1055,35 @@
         }
 
         function normalizeDiscordNameLoose(value) {
-            return normalizeDiscordName(value).replace(/[^a-z0-9ąćęłńóśźż_-]/gi, '');
+            return normalizeDiscordName(value)
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9ąćęłńóśźż_-]/gi, '');
         }
 
         function getRecruitmentStatus(rec) {
             let meta = rec && rec.quiz;
 
-            // Supabase czasem może oddać JSON jako tekst — obsługujemy oba warianty.
             if(typeof meta === 'string') {
                 try { meta = JSON.parse(meta); } catch(_err) {}
             }
 
             if(meta && !Array.isArray(meta) && typeof meta === 'object') {
                 return {
-                    status: meta.status || (meta.examPassed === true ? 'przyjety' : 'oczekuje'),
+                    status: (meta.status || '').toString().trim().toLowerCase(),
                     examPassed: meta.examPassed === true || meta.examPassed === 'true',
                     ...meta
                 };
             }
 
-            // Stare podania z dawną strukturą quizu nie blokują kierowcy.
             return { status: 'stare_podanie', examPassed: true };
+        }
+
+        function isRecruitmentAccepted(st) {
+            const status = (st && st.status ? st.status : '').toString().trim().toLowerCase();
+            return st?.examPassed === true || [
+                'przyjety', 'przyjęty', 'przeszedl', 'przeszedł', 'zaakceptowany', 'accepted', 'zdany'
+            ].includes(status);
         }
 
         function recruitmentNickMatches(rec) {
@@ -1100,47 +1108,68 @@
             return recNames.some(name => {
                 const exact = normalizeDiscordName(name);
                 const loose = normalizeDiscordNameLoose(name);
-                return exactMine.has(exact) || looseMine.has(loose);
+                if(exactMine.has(exact) || looseMine.has(loose)) return true;
+
+                // Bardzo luźne porównanie: działa, gdy ktoś wpisał nick z @, spacją,
+                // display name, albo drobnym dodatkiem typu „Paweł | nick”.
+                for(const myExact of exactMine) {
+                    if(myExact && exact && (exact.includes(myExact) || myExact.includes(exact))) return true;
+                }
+                for(const myLoose of looseMine) {
+                    if(myLoose && loose && (loose.includes(myLoose) || myLoose.includes(loose))) return true;
+                }
+                return false;
             });
+        }
+
+        async function getRecruitmentRows() {
+            const { data, error } = await sb.from('rekrutacja').select('*').order('id', { ascending: false });
+            if(error) {
+                console.error('Błąd pobierania rekrutacji:', error);
+                return [];
+            }
+            return data || [];
         }
 
         async function findMyRecruitmentRecord() {
             if(!currentUser || currentUser.isAdmin) return null;
-            const { data, error } = await sb.from('rekrutacja').select('*').order('id', { ascending: false });
-            if(error) {
-                console.error('Błąd pobierania rekrutacji:', error);
-                return null;
-            }
-            if(!data) return null;
+            const data = await getRecruitmentRows();
             return data.find(r => recruitmentNickMatches(r)) || null;
         }
 
         async function proceedAfterLogin() {
-            // Admin i kierowca z rolą vmpk driver wchodzą normalnie do panelu.
             if(currentUser && (currentUser.isAdmin === true || currentUser.isDriver === true)) {
                 showDashboard();
                 return;
             }
 
-            // Kandydat NIE musi mieć roli trainee.
-            // Wystarczy, że jego nick z podania zgadza się z Discord username
-            // i dyspozytor kliknął przy podaniu „PRZESZEDŁ”.
-            const rec = await findMyRecruitmentRecord();
+            const allRecs = await getRecruitmentRows();
+            const rec = allRecs.find(r => recruitmentNickMatches(r));
+
             if(rec) {
                 const st = getRecruitmentStatus(rec);
 
-                if(st.status === 'przyjety' && st.examPassed === true) {
-                    showDashboard();
+                if(isRecruitmentAccepted(st)) {
+                    if(st.examPassed === true) {
+                        showDashboard();
+                    } else {
+                        showExamGate();
+                    }
                     return;
                 }
 
-                if(st.status === 'przyjety') {
-                    showExamGate();
-                    return;
-                }
+                showAlert('Brak dostępu', `Znalazłem Twoje podanie, ale nie jest oznaczone jako PRZYJĘTE / PRZESZEDŁ. Aktualny status: ${st.status || 'brak'}.`, 'error');
+                return;
             }
 
-            showAlert('Brak dostępu', `Nie znaleziono zaakceptowanego podania pasującego do Twojego Discorda. W podaniu wpisz Discord username: ${currentUser?.discordUsername || currentUser?.user || 'nieznany'} albo nazwę serwerową: ${currentUser?.user || 'nieznana'}.`, 'error');
+            const myNames = [currentUser?.discordUsername, currentUser?.user, currentUser?.discordDisplayName, currentUser?.globalName].filter(Boolean).join(' / ');
+            const acceptedPreview = allRecs
+                .filter(r => isRecruitmentAccepted(getRecruitmentStatus(r)))
+                .slice(0, 5)
+                .map(r => r.nick || '(brak nicku)')
+                .join(', ');
+
+            showAlert('Brak dostępu', `ULTRA FIX v4: Nie znalazłem podania z nickiem pasującym do Twojego Discorda. Discord zwraca: ${myNames || 'brak danych'}. Zaakceptowane nicki w bazie: ${acceptedPreview || 'brak'}.`, 'error');
             localStorage.removeItem('vmpk_discord_token');
             localStorage.removeItem('vmpk_user');
             localStorage.removeItem('vmpk_session_start');
