@@ -731,7 +731,7 @@
 
         // ADRES TWOJEGO BACKENDU DISCORD AUTH
         // Po wrzuceniu backendu na Render/Vercel podmień ten adres, np. https://vmpk-auth.onrender.com
-        const AUTH_API_URL = 'https://backend-vmpk-2.onrender.com';
+        const AUTH_API_URL = 'https://backend-1-9zep.onrender.com';
 
         const USERS = [
             { user: "pawdan", pass: "admin123", isAdmin: true },
@@ -1046,7 +1046,31 @@
             }
         }
 
+        const DISCORD_LOGIN_COOLDOWN_MS = 10 * 60 * 1000;
+
+        function formatCooldown(ms) {
+            const totalSeconds = Math.ceil(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
         function handleLogin() {
+            const now = Date.now();
+            const lastTry = parseInt(localStorage.getItem('vmpk_last_discord_login_try') || '0', 10);
+            const diff = now - lastTry;
+
+            if (lastTry && diff < DISCORD_LOGIN_COOLDOWN_MS) {
+                const left = DISCORD_LOGIN_COOLDOWN_MS - diff;
+                showAlert(
+                    'Logowanie Discord',
+                    `Logowanie było już użyte niedawno. Spróbuj ponownie za ${formatCooldown(left)}.`,
+                    'info'
+                );
+                return;
+            }
+
+            localStorage.setItem('vmpk_last_discord_login_try', now.toString());
             window.location.href = `${AUTH_API_URL}/auth/discord`;
         }
 
