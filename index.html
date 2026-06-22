@@ -516,10 +516,23 @@
             <i class="fa-solid fa-clipboard-check" style="font-size:58px; color:var(--yellow); margin-bottom:18px;"></i>
             <h1 style="margin-bottom:12px;">Najpierw musisz zdać egzamin państwowy</h1>
             <p style="color:var(--text-dim); line-height:1.6;">
-                Twoje podanie zostało przyjęte, ale dostęp do panelu kierowcy zostanie odblokowany dopiero po ręcznym zatwierdzeniu zdania egzaminu przez zarząd.
+                Twoje podanie zostało przyjęte. Masz maksymalnie 3 próby egzaminu. Po pozytywnym wyniku zobaczysz osobny komunikat oczekiwania na rolę vmpk driver.
             </p>
             <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:24px;">
                 <a class="btn btn-yellow" href="https://pawdan22.github.io/egzamin-prafko/" target="_blank" style="text-decoration:none;"><i class="fa-solid fa-arrow-up-right-from-square"></i> Przejdź do egzaminu</a>
+                <button class="btn btn-accent" onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i> Wyloguj</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="exam-passed-page" style="display:none; min-height:100vh; align-items:center; justify-content:center; padding:30px; background: radial-gradient(circle at top, rgba(53,208,127,0.12), transparent 42%), linear-gradient(135deg, #050506, #111116);">
+        <div class="exam-gate-card">
+            <i class="fa-solid fa-circle-check" style="font-size:58px; color:var(--green); margin-bottom:18px;"></i>
+            <h1 style="margin-bottom:12px;">Egzamin został zakończony z wynikiem pozytywnym.</h1>
+            <p style="color:var(--text-dim); line-height:1.6;">
+                Teraz poczekaj na nadanie roli <b>vmpk driver</b> na Discordzie. Dopóki jej nie masz, panel kierowcy pozostanie zablokowany.
+            </p>
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:24px;">
                 <button class="btn btn-accent" onclick="handleLogout()"><i class="fa-solid fa-right-from-bracket"></i> Wyloguj</button>
             </div>
         </div>
@@ -1151,7 +1164,7 @@
 
                 if(isRecruitmentAccepted(st)) {
                     if(st.examPassed === true) {
-                        showDashboard();
+                        showExamPassedGate();
                     } else {
                         showExamGate();
                     }
@@ -1179,11 +1192,25 @@
             document.getElementById('login-page').style.display = 'none';
             document.getElementById('recruitment-page').style.display = 'none';
             document.getElementById('dashboard').style.display = 'none';
+            const passedPage = document.getElementById('exam-passed-page');
+            if(passedPage) passedPage.style.display = 'none';
             document.getElementById('exam-gate-page').style.display = 'flex';
+        }
+
+        function showExamPassedGate() {
+            document.getElementById('login-page').style.display = 'none';
+            document.getElementById('recruitment-page').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('exam-gate-page').style.display = 'none';
+            document.getElementById('exam-passed-page').style.display = 'flex';
         }
 
         function showDashboard() {
             document.getElementById('login-page').style.display = 'none';
+            const examGate = document.getElementById('exam-gate-page');
+            const examPassed = document.getElementById('exam-passed-page');
+            if(examGate) examGate.style.display = 'none';
+            if(examPassed) examPassed.style.display = 'none';
             document.getElementById('dashboard').style.display = 'grid';
             document.getElementById('display-user').innerText = currentUser.user;
             document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'none');
