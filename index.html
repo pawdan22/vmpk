@@ -945,6 +945,8 @@
                 pass: '',
                 discordId: me.id,
                 discordUsername: me.discordUsername,
+                discordDisplayName: me.discordDisplayName || me.displayName || me.globalName || '',
+                globalName: me.globalName || '',
                 isAdmin: me.isAdmin === true,
                 isDriver: me.isDriver === true,
                 isTrainee: me.isTrainee === true
@@ -1013,6 +1015,8 @@
                     user: user.username,
                     discordId: user.id,
                     discordUsername: user.discordUsername,
+                    discordDisplayName: user.discordDisplayName || user.displayName || user.globalName || '',
+                    globalName: user.globalName || '',
                     avatar: user.avatar,
                     isAdmin: user.isAdmin === true,
                     isDriver: user.isDriver === true,
@@ -1042,21 +1046,73 @@
 
 
         function normalizeDiscordName(value) {
-            return (value || '').toString().trim().toLowerCase().replace(/^@/, '');
+            return (value || '')
+                .toString()
+                .trim()
+                .toLowerCase()
+                .replace(/^@/, '')
+                .replace(/#\d{4}$/, '');
+        }
+
+        function normalizeDiscordNameLoose(value) {
+            return normalizeDiscordName(value).replace(/[^a-z0-9ąćęłńóśźż_-]/gi, '');
         }
 
         function getRecruitmentStatus(rec) {
-            const meta = rec && rec.quiz;
-            if(meta && !Array.isArray(meta) && typeof meta === 'object') return meta;
+            let meta = rec && rec.quiz;
+
+            // Supabase czasem może oddać JSON jako tekst — obsługujemy oba warianty.
+            if(typeof meta === 'string') {
+                try { meta = JSON.parse(meta); } catch(_err) {}
+            }
+
+            if(meta && !Array.isArray(meta) && typeof meta === 'object') {
+                return {
+                    status: meta.status || (meta.examPassed === true ? 'przyjety' : 'oczekuje'),
+                    examPassed: meta.examPassed === true || meta.examPassed === 'true',
+                    ...meta
+                };
+            }
+
+            // Stare podania z dawną strukturą quizu nie blokują kierowcy.
             return { status: 'stare_podanie', examPassed: true };
+        }
+
+        function recruitmentNickMatches(rec) {
+            const recNames = [
+                rec && rec.nick,
+                rec && rec.discord_username,
+                rec && rec.discordUsername,
+                rec && rec.discord_display_name,
+                rec && rec.discordDisplayName
+            ].filter(Boolean);
+
+            const myNames = [
+                currentUser && currentUser.discordUsername,
+                currentUser && currentUser.user,
+                currentUser && currentUser.discordDisplayName,
+                currentUser && currentUser.globalName
+            ].filter(Boolean);
+
+            const exactMine = new Set(myNames.map(normalizeDiscordName));
+            const looseMine = new Set(myNames.map(normalizeDiscordNameLoose));
+
+            return recNames.some(name => {
+                const exact = normalizeDiscordName(name);
+                const loose = normalizeDiscordNameLoose(name);
+                return exactMine.has(exact) || looseMine.has(loose);
+            });
         }
 
         async function findMyRecruitmentRecord() {
             if(!currentUser || currentUser.isAdmin) return null;
-            const { data } = await sb.from('rekrutacja').select('*').order('id', { ascending: false });
+            const { data, error } = await sb.from('rekrutacja').select('*').order('id', { ascending: false });
+            if(error) {
+                console.error('Błąd pobierania rekrutacji:', error);
+                return null;
+            }
             if(!data) return null;
-            const names = [currentUser.discordUsername, currentUser.user].map(normalizeDiscordName).filter(Boolean);
-            return data.find(r => names.includes(normalizeDiscordName(r.nick))) || null;
+            return data.find(r => recruitmentNickMatches(r)) || null;
         }
 
         async function proceedAfterLogin() {
@@ -1084,7 +1140,7 @@
                 }
             }
 
-            showAlert('Brak dostępu', 'Nie masz jeszcze dostępu do panelu. Kandydat musi mieć zaakceptowane podanie, a nick z podania musi zgadzać się z Discord username.', 'error');
+            showAlert('Brak dostępu', `Nie znaleziono zaakceptowanego podania pasującego do Twojego Discorda. W podaniu wpisz Discord username: ${currentUser?.discordUsername || currentUser?.user || 'nieznany'} albo nazwę serwerową: ${currentUser?.user || 'nieznana'}.`, 'error');
             localStorage.removeItem('vmpk_discord_token');
             localStorage.removeItem('vmpk_user');
             localStorage.removeItem('vmpk_session_start');
