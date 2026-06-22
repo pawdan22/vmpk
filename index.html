@@ -456,7 +456,7 @@
             <img src="logo.png" alt="VMPK Logo" class="login-logo">
             <h2 style="margin-top:0; color:var(--yellow);">Panel Kierowcy</h2>
             <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom:20px;">
-                Logowanie odbywa się przez Discord. Dostęp mają tylko osoby z rolą vmpK driver.
+                Logowanie odbywa się przez Discord. Dostęp do panelu mają kierowcy, a kandydaci z rolą trainee mogą wejść do egzaminu po akceptacji podania.
             </p>
             <button class="login-btn btn" onclick="handleLogin()" style="background:#5865F2; justify-content:center;">
                 <i class="fa-brands fa-discord"></i> Zaloguj przez Discord
@@ -945,7 +945,9 @@
                 pass: '',
                 discordId: me.id,
                 discordUsername: me.discordUsername,
-                isAdmin: me.isAdmin
+                isAdmin: me.isAdmin === true,
+                isDriver: me.isDriver === true,
+                isTrainee: me.isTrainee === true
             };
 
             localStorage.setItem('vmpk_user', JSON.stringify(currentUser));
@@ -1012,7 +1014,9 @@
                     discordId: user.id,
                     discordUsername: user.discordUsername,
                     avatar: user.avatar,
-                    isAdmin: user.isAdmin === true
+                    isAdmin: user.isAdmin === true,
+                    isDriver: user.isDriver === true,
+                    isTrainee: user.isTrainee === true
                 };
                 localStorage.setItem('vmpk_user', JSON.stringify(currentUser));
                 localStorage.setItem('vmpk_session_start', new Date().getTime());
@@ -1056,15 +1060,45 @@
         }
 
         async function proceedAfterLogin() {
-            const rec = await findMyRecruitmentRecord();
-            if(rec) {
-                const st = getRecruitmentStatus(rec);
-                if(st.status === 'przyjety' && st.examPassed !== true) {
-                    showExamGate();
-                    return;
-                }
+            if(currentUser && currentUser.isAdmin) {
+                showDashboard();
+                return;
             }
-            showDashboard();
+
+            const rec = await findMyRecruitmentRecord();
+            const st = rec ? getRecruitmentStatus(rec) : null;
+
+            // Pełny kierowca z rolą driver ma normalny dostęp do panelu.
+            if(currentUser && currentUser.isDriver) {
+                showDashboard();
+                return;
+            }
+
+            // Kandydat z rolą trainee po akceptacji podania dostaje tylko bramkę egzaminu.
+            if(currentUser && currentUser.isTrainee && st && st.status === 'przyjety' && st.examPassed !== true) {
+                showExamGate();
+                return;
+            }
+
+            // Po oznaczeniu egzaminu jako zdany w panelu dyspozytora dostęp do panelu zostaje odblokowany.
+            if(st && st.examPassed === true) {
+                showDashboard();
+                return;
+            }
+
+            showAccessDenied('Nie masz jeszcze dostępu do panelu. Kandydat musi mieć rolę trainee oraz zaakceptowane podanie, aby przejść do egzaminu.');
+        }
+
+        function showAccessDenied(message) {
+            localStorage.removeItem('vmpk_discord_token');
+            localStorage.removeItem('vmpk_user');
+            localStorage.removeItem('vmpk_session_start');
+            currentUser = null;
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('exam-gate-page').style.display = 'none';
+            document.getElementById('recruitment-page').style.display = 'none';
+            document.getElementById('login-page').style.display = 'flex';
+            showAlert('Brak dostępu', message, 'error');
         }
 
         function showExamGate() {
@@ -1441,7 +1475,7 @@ requestsBody.innerHTML = sortedRequests.map(r => `
                 quiz: { status: 'przyjety', examPassed: false, acceptedAt: new Date().toISOString() }
             }).eq('id', id);
             if(error) showAlert('Błąd', 'Nie udało się zaakceptować podania: ' + error.message, 'error');
-            else { showAlert('Rekrutacja', 'Podanie oznaczone jako przyjęte. Teraz ręcznie wyślij maila i nadaj rolę Discord, jeśli trzeba.', 'success'); refreshAdminPanel(); }
+            else { showAlert('Rekrutacja', 'Podanie oznaczone jako przyjęte. Kandydat z rolą trainee będzie mógł wejść do egzaminu po zalogowaniu przez Discord.', 'success'); refreshAdminPanel(); }
         }
 
         async function markExamPassed(id) {
