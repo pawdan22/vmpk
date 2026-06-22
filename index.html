@@ -456,7 +456,7 @@
             <img src="logo.png" alt="VMPK Logo" class="login-logo">
             <h2 style="margin-top:0; color:var(--yellow);">Panel Kierowcy</h2>
             <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin-bottom:20px;">
-                Logowanie odbywa się przez Discord. Dostęp do panelu mają kierowcy, a kandydaci z rolą trainee mogą wejść do egzaminu po akceptacji podania.
+                Logowanie odbywa się przez Discord. Kierowcy z rolą vmpK driver wchodzą do panelu, a kandydaci przyjęci przez dyspozytora mogą przejść do egzaminu.
             </p>
             <button class="login-btn btn" onclick="handleLogin()" style="background:#5865F2; justify-content:center;">
                 <i class="fa-brands fa-discord"></i> Zaloguj przez Discord
@@ -1060,45 +1060,34 @@
         }
 
         async function proceedAfterLogin() {
-            if(currentUser && currentUser.isAdmin) {
+            // Admin i kierowca z rolą vmpk driver wchodzą normalnie do panelu.
+            if(currentUser && (currentUser.isAdmin === true || currentUser.isDriver === true)) {
                 showDashboard();
                 return;
             }
 
+            // Kandydat NIE musi mieć roli trainee.
+            // Wystarczy, że jego nick z podania zgadza się z Discord username
+            // i dyspozytor kliknął przy podaniu „PRZESZEDŁ”.
             const rec = await findMyRecruitmentRecord();
-            const st = rec ? getRecruitmentStatus(rec) : null;
+            if(rec) {
+                const st = getRecruitmentStatus(rec);
 
-            // Pełny kierowca z rolą driver ma normalny dostęp do panelu.
-            if(currentUser && currentUser.isDriver) {
-                showDashboard();
-                return;
+                if(st.status === 'przyjety' && st.examPassed === true) {
+                    showDashboard();
+                    return;
+                }
+
+                if(st.status === 'przyjety') {
+                    showExamGate();
+                    return;
+                }
             }
 
-            // Kandydat z rolą trainee po akceptacji podania dostaje tylko bramkę egzaminu.
-            if(currentUser && currentUser.isTrainee && st && st.status === 'przyjety' && st.examPassed !== true) {
-                showExamGate();
-                return;
-            }
-
-            // Po oznaczeniu egzaminu jako zdany w panelu dyspozytora dostęp do panelu zostaje odblokowany.
-            if(st && st.examPassed === true) {
-                showDashboard();
-                return;
-            }
-
-            showAccessDenied('Nie masz jeszcze dostępu do panelu. Kandydat musi mieć rolę trainee oraz zaakceptowane podanie, aby przejść do egzaminu.');
-        }
-
-        function showAccessDenied(message) {
+            showAlert('Brak dostępu', 'Nie masz jeszcze dostępu do panelu. Kandydat musi mieć zaakceptowane podanie, a nick z podania musi zgadzać się z Discord username.', 'error');
             localStorage.removeItem('vmpk_discord_token');
             localStorage.removeItem('vmpk_user');
             localStorage.removeItem('vmpk_session_start');
-            currentUser = null;
-            document.getElementById('dashboard').style.display = 'none';
-            document.getElementById('exam-gate-page').style.display = 'none';
-            document.getElementById('recruitment-page').style.display = 'none';
-            document.getElementById('login-page').style.display = 'flex';
-            showAlert('Brak dostępu', message, 'error');
         }
 
         function showExamGate() {
@@ -1475,7 +1464,7 @@ requestsBody.innerHTML = sortedRequests.map(r => `
                 quiz: { status: 'przyjety', examPassed: false, acceptedAt: new Date().toISOString() }
             }).eq('id', id);
             if(error) showAlert('Błąd', 'Nie udało się zaakceptować podania: ' + error.message, 'error');
-            else { showAlert('Rekrutacja', 'Podanie oznaczone jako przyjęte. Kandydat z rolą trainee będzie mógł wejść do egzaminu po zalogowaniu przez Discord.', 'success'); refreshAdminPanel(); }
+            else { showAlert('Rekrutacja', 'Podanie oznaczone jako przyjęte. Kandydat po zalogowaniu Discordem przejdzie do egzaminu, jeśli nick z podania zgadza się z jego Discord username.', 'success'); refreshAdminPanel(); }
         }
 
         async function markExamPassed(id) {
